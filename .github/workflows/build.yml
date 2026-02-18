@@ -1,0 +1,26 @@
+name: Build Debug APK
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Install dependencies
+        run: npm install
+      - name: Build web project
+        run: npm run build
+      - name: Sync with Capacitor
+        run: npx cap sync android
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: My-Quran-App-Debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
