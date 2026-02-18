@@ -4,7 +4,7 @@ import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import { RECITERS, SURAH_LIST } from '../data/listenQuranData';
 
-const STORAGE_KEY = 'listen_quran_state_v6';
+const STORAGE_KEY = 'listen_quran_state_v7';
 
 const toArabicNumerals = (numStr) => String(numStr).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
 
@@ -20,6 +20,7 @@ function ListenQuran({ onBack }) {
     const [reciterId, setReciterId] = useState(RECITERS[0].id);
     const [surahNumber, setSurahNumber] = useState(1);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [isContinuousPlay, setIsContinuousPlay] = useState(true);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
@@ -31,14 +32,18 @@ function ListenQuran({ onBack }) {
         try {
             const savedState = localStorage.getItem(STORAGE_KEY);
             if (savedState) {
-                const { savedReciterId, savedSurahNumber } = JSON.parse(savedState);
+                const { savedReciterId, savedSurahNumber, savedContinuousPlay } = JSON.parse(savedState);
                 if (RECITERS.some(r => r.id === savedReciterId)) setReciterId(savedReciterId);
                 if (SURAH_LIST.some(s => s.number === savedSurahNumber)) setSurahNumber(savedSurahNumber);
+                if (typeof savedContinuousPlay === 'boolean') setIsContinuousPlay(savedContinuousPlay);
             }
         } catch (e) {
             console.error("Failed to load state from localStorage", e);
         }
     }, []);
+
+    const handleNextSurah = () => setSurahNumber(s => s === 114 ? 1 : s + 1);
+    const handlePrevSurah = () => setSurahNumber(s => s === 1 ? 114 : s - 1);
 
     useEffect(() => {
         audioRef.current = new Audio();
@@ -48,7 +53,14 @@ function ListenQuran({ onBack }) {
         const handleDurationChange = () => setDuration(audio.duration);
         const handlePlay = () => setIsPlaying(true);
         const handlePause = () => setIsPlaying(false);
-        const handleEnded = () => handleNextSurah();
+        const handleEnded = () => {
+             if (isContinuousPlay) {
+                handleNextSurah();
+             } else {
+                setIsPlaying(false);
+                setCurrentTime(0);
+             }
+        };
         const handleWaiting = () => setIsLoading(true);
         const handlePlaying = () => setIsLoading(false);
         const handleError = () => {
@@ -77,7 +89,7 @@ function ListenQuran({ onBack }) {
             audio.removeEventListener('waiting', handleWaiting);
             audio.removeEventListener('playing', handlePlaying);
         };
-    }, []);
+    }, [isContinuousPlay]); // Re-attach ended listener if continuous play setting changes
 
     useEffect(() => {
         if (!reciterId || !surahNumber) return;
@@ -92,7 +104,7 @@ function ListenQuran({ onBack }) {
         setError('');
 
         const surahFormatted = String(surahNumber).padStart(3, '0');
-        const audioUrl = `https://server7.mp3quran.net/${reciterId}/${surahFormatted}.mp3`;
+        const audioUrl = `${reciterId}/${surahFormatted}.mp3`;
 
         audio.src = audioUrl;
         audio.load();
@@ -107,9 +119,21 @@ function ListenQuran({ onBack }) {
             setIsLoading(false);
         }
         
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ savedReciterId: reciterId, savedSurahNumber: surahNumber }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+            savedReciterId: reciterId, 
+            savedSurahNumber: surahNumber,
+            savedContinuousPlay: isContinuousPlay,
+        }));
 
     }, [reciterId, surahNumber]);
+    
+     useEffect(() => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+             savedReciterId: reciterId, 
+             savedSurahNumber: surahNumber,
+             savedContinuousPlay: isContinuousPlay 
+        }));
+    }, [isContinuousPlay]);
     
     const handlePlayPause = async () => {
         const audio = audioRef.current;
@@ -125,9 +149,6 @@ function ListenQuran({ onBack }) {
             }
         }
     };
-
-    const handleNextSurah = () => setSurahNumber(s => s === 114 ? 1 : s + 1);
-    const handlePrevSurah = () => setSurahNumber(s => s === 1 ? 114 : s - 1);
 
     const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
         const audio = audioRef.current;
@@ -157,6 +178,23 @@ function ListenQuran({ onBack }) {
                      <select id="surah-select" value={surahNumber} onChange={(e) => setSurahNumber(Number(e.target.value))} className="w-full p-3 rounded-lg themed-bg-alt themed-text border themed-card-border font-bold">
                         {SURAH_LIST.map(s => <option key={s.number} value={s.number}>{s.number} - {s.name}</option>)}
                      </select>
+                </div>
+
+                <div className="themed-card rounded-2xl p-3 flex items-center justify-between">
+                    <label htmlFor="continuous-play-toggle" className="font-bold text-sm themed-text flex items-center gap-2">
+                        <i className="fa-solid fa-infinity" style={{color: theme.palette[1]}}></i>
+                        <span>تشغيل متواصل</span>
+                    </label>
+                    <button
+                        id="continuous-play-toggle"
+                        onClick={() => setIsContinuousPlay(prev => !prev)}
+                        className={`w-14 h-8 rounded-full p-1 transition-colors flex items-center ${isContinuousPlay ? '' : 'bg-gray-300 dark:bg-gray-600'}`}
+                        style={{ backgroundColor: isContinuousPlay ? theme.palette[0] : undefined }}
+                        aria-checked={isContinuousPlay}
+                        role="switch"
+                    >
+                        <span className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform ${isContinuousPlay ? 'translate-x-6' : ''}`}></span>
+                    </button>
                 </div>
                 
                 <div className="themed-card rounded-2xl p-5 flex flex-col items-center justify-center space-y-4">

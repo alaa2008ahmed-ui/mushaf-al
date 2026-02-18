@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import MainMenu from './pages/MainMenu';
 import AthkarAlSalah from './pages/AthkarAlSalah';
 import HijriCalendar from './pages/HijriCalendar';
@@ -18,7 +18,7 @@ function App() {
   const [page, setPage] = useState('home');
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
 
-  // Use refs to hold the current state values to avoid stale closures in the event listener
+  // Refs to hold current state, preventing stale closures in event listeners.
   const pageRef = useRef(page);
   useEffect(() => {
     pageRef.current = page;
@@ -29,120 +29,77 @@ function App() {
     isThemeSelectorOpenRef.current = isThemeSelectorOpen;
   }, [isThemeSelectorOpen]);
 
+  // Memoized handler for the back button press for stability.
+  const handleBackButton = useCallback((event: Event) => {
+    // This is the most critical part: prevent the default OS action (like exiting the app).
+    event.preventDefault();
 
-  // This effect sets up device listeners and screen wake lock.
-  useEffect(() => {
-    const onBackKeyDown = (e: Event) => {
-      e.preventDefault();
+    if (isThemeSelectorOpenRef.current) {
+      // If the theme selector is open, the back button should close it first.
+      setIsThemeSelectorOpen(false);
+      return;
+    }
 
-      if (isThemeSelectorOpenRef.current) {
-        setIsThemeSelectorOpen(false);
-        return;
-      }
-
-      if (pageRef.current !== 'home') {
-        setPage('home');
-      } else {
-        if ((navigator as any).notification && typeof (navigator as any).notification.confirm === 'function') {
-          (navigator as any).notification.confirm(
-            'هل تريد الخروج من تطبيق احمد وليلى',
-            (buttonIndex) => {
-              if (buttonIndex === 1) {
-                if ((navigator as any).app && typeof (navigator as any).app.exitApp === 'function') {
-                  (navigator as any).app.exitApp();
-                }
+    if (pageRef.current !== 'home') {
+      // If we are on any page other than home, go back to the home screen.
+      setPage('home');
+    } else {
+      // If we are on the home page, show an exit confirmation dialog.
+      const appNavigator = window.navigator as any;
+      if (appNavigator.notification && typeof appNavigator.notification.confirm === 'function') {
+        appNavigator.notification.confirm(
+          'هل تريد الخروج من تطبيق احمد وليلى؟', // message
+          (buttonIndex) => {
+            // In Cordova, buttonIndex is 1-based. 'نعم' is the first button.
+            if (buttonIndex === 1) {
+              if (appNavigator.app && typeof appNavigator.app.exitApp === 'function') {
+                appNavigator.app.exitApp();
               }
-            },
-            'تأكيد الخروج',
-            ['نعم', 'لا']
-          );
-        } else {
-          if (window.confirm('هل تريد الخروج من تطبيق احمد وليلى')) {
-            if ((navigator as any).app && typeof (navigator as any).app.exitApp === 'function') {
-              (navigator as any).app.exitApp();
             }
-          }
-        }
-      }
-    };
-
-    // --- Screen Wake Lock Logic ---
-    let wakeLock: WakeLockSentinel | null = null;
-    
-    const requestWakeLock = async () => {
-      if (document.visibilityState !== 'visible') return;
-      if ('wakeLock' in navigator) {
-        try {
-          wakeLock = await navigator.wakeLock.request('screen');
-          console.log('Screen Wake Lock is active.');
-          wakeLock.addEventListener('release', () => {
-            console.log('Screen Wake Lock was released.');
-          });
-        } catch (err) {
-          console.error(`WakeLock request failed: ${(err as Error).name}, ${(err as Error).message}`);
-          wakeLock = null;
-        }
-      } else {
-        console.warn('Screen Wake Lock API is not supported.');
-      }
-    };
-
-    const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-            requestWakeLock();
-        }
-    };
-    // --- End Wake Lock Logic ---
-
-    const onDeviceReady = () => {
-      document.addEventListener('backbutton', onBackKeyDown, false);
-      
-      if ((window as any).plugins && (window as any).plugins.insomnia) {
-        (window as any).plugins.insomnia.keepAwake(
-          () => console.log('Insomnia plugin is keeping the screen on.'),
-          () => {
-            console.warn('Insomnia plugin failed, falling back to Screen Wake Lock API.');
-            requestWakeLock();
-            document.addEventListener('visibilitychange', handleVisibilityChange);
-          }
+          },
+          'تأكيد الخروج', // title
+          ['نعم', 'لا'] // buttonLabels
         );
       } else {
-        console.log('Insomnia plugin not found, using Screen Wake Lock API.');
-        requestWakeLock();
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        // Fallback for browsers or environments without the dialog plugin.
+        if (window.confirm('هل تريد الخروج من تطبيق احمد وليلى؟')) {
+          if (appNavigator.app && typeof appNavigator.app.exitApp === 'function') {
+            appNavigator.app.exitApp();
+          }
+        }
+      }
+    }
+  }, []); // This callback is memoized and doesn't need dependencies due to using refs.
+
+  // Effect to set up device-specific features and event listeners ONCE.
+  useEffect(() => {
+    const onDeviceReady = () => {
+      // 1. Add the robust back button listener.
+      document.addEventListener('backbutton', handleBackButton, false);
+
+      // 2. Keep the screen on as long as the app is running.
+      const win = window as any;
+      if (win.plugins && win.plugins.insomnia) {
+        win.plugins.insomnia.keepAwake(
+          () => console.log('Insomnia: Screen will stay on.'),
+          () => console.warn('Insomnia: Failed to keep screen on.')
+        );
       }
     };
 
+    // This is the entry point for all Cordova-related initializations.
     document.addEventListener('deviceready', onDeviceReady, false);
 
-    // FIX: Add type assertion to 'any' for 'window.cordova' to resolve TypeScript error. The 'cordova' property is added by the Cordova framework at runtime and is not part of the standard 'window' type definition.
-    if (!(window as any).cordova || (window as any).cordova.platformId === 'browser') {
-        console.log('Browser environment detected, using Screen Wake Lock API.');
-        requestWakeLock();
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-    }
-    
+    // Cleanup function to remove listeners when the component unmounts.
     return () => {
       document.removeEventListener('deviceready', onDeviceReady, false);
-      document.removeEventListener('backbutton', onBackKeyDown, false);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      
-      if (wakeLock !== null) {
-        wakeLock.release();
-        wakeLock = null;
-      }
-      
-      if ((window as any).plugins && (window as any).plugins.insomnia) {
-        (window as any).plugins.insomnia.allowSleepAgain(() => {}, () => {});
-      }
+      document.removeEventListener('backbutton', handleBackButton, false);
     };
-  }, []); // Empty dependency array ensures this effect runs only once on mount.
+  }, [handleBackButton]); // Dependency ensures the correct handler is always attached.
 
 
   const handleNavigate = (pageId) => {
-    if (pageId === 'quran') {
-        setPage('quran');
-    } else if (pageId === 'salah-adhkar') {
+    if (pageId === 'salah-adhkar') {
         setPage('salah-adhkar');
     } else if (pageId === 'calendar') {
         setPage('calendar');
@@ -172,14 +129,6 @@ function App() {
 
   const renderPage = () => {
     switch(page) {
-      case 'quran':
-        return (
-            <iframe 
-                src="QuranV.html" 
-                title="القرآن الكريم" 
-                style={{ width: '100%', height: '100dvh', border: 'none' }}
-            />
-        );
       case 'salah-adhkar':
         return <AthkarAlSalah onBack={() => setPage('home')} />;
       case 'calendar':

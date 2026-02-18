@@ -1,19 +1,19 @@
 
 export const RECITERS = [
-    { id: 'Mishary_Rashed_Alafasy', name: 'مشاري راشد العفاسي' },
-    { id: 'Abdul_Rahman_Al-Sudais', name: 'عبدالرحمن السديس' },
-    { id: 'Saad_Al-Ghamdi', name: 'سعد الغامدي' },
-    { id: 'maher_al_muaiqly', name: 'ماهر المعيقلي' },
-    { id: 'Yasser_Al-Dosari', name: 'ياسر الدوسري' },
-    { id: 'Nasser_Al_Qatami', name: 'ناصر القطامي' },
-    { id: 'Ahmed_Al-Ajmi', name: 'أحمد بن علي العجمي' },
-    { id: 'Abdul_Basit_Abdul_Samad_Mujawwad', name: 'عبدالباسط عبدالصمد (مجود)' },
-    { id: 'Abdul_Basit_Abdul_Samad_Murattal', name: 'عبدالباسط عبدالصمد (مرتل)' },
-    { id: 'Muhammad_Siddiq_Al-Minshawi_Mujawwad', name: 'محمد صديق المنشاوي (مجود)' },
-    { id: 'Muhammad_Siddiq_Al-Minshawi_Murattal', name: 'محمد صديق المنشاوي (مرتل)' },
-    { id: 'Mahmoud_Khalil_Al-Husary', name: 'محمود خليل الحصري' },
-    { id: 'Saud_Al-Shuraim', name: 'سعود الشريم' },
-    { id: 'Abu_Bakr_Al-Shatri', name: 'أبو بكر الشاطري' },
+    { id: 'https://server8.mp3quran.net/afs', name: 'مشاري راشد العفاسي' },
+    { id: 'https://server7.mp3quran.net/sds', name: 'عبدالرحمن السديس' },
+    { id: 'https://server7.mp3quran.net/shur', name: 'سعود الشريم' },
+    { id: 'https://server12.mp3quran.net/maher', name: 'ماهر المعيقلي' },
+    { id: 'https://server13.mp3quran.net/yasser', name: 'ياسر الدوسري' },
+    { id: 'https://server13.mp3quran.net/qtm', name: 'ناصر القطامي' },
+    { id: 'https://server10.mp3quran.net/ajm', name: 'أحمد بن علي العجمي' },
+    { id: 'https://server8.mp3quran.net/basit', name: 'عبدالباسط عبدالصمد (مرتل)' },
+    { id: 'https://server10.mp3quran.net/minsh', name: 'محمد صديق المنشاوي (مرتل)' },
+    { id: 'https://server13.mp3quran.net/husr', name: 'محمود خليل الحصري' },
+    { id: 'https://server8.mp3quran.net/frs_a', name: 'فارس عباد' },
+    { id: 'https://server8.mp3quran.net/ali_jbr', name: 'علي جابر' },
+    { id: 'https://server9.mp3quran.net/abkr', name: 'إدريس أبكر' },
+    { id: 'https://server11.mp3quran.net/shatri', name: 'أبو بكر الشاطري' }
 ];
 
 export const SURAH_LIST = [
