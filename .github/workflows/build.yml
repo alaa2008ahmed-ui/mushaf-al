@@ -5,6 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -17,18 +18,27 @@ jobs:
           cache: 'gradle'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          npm install @capacitor/cli # نضمن وجود الأداة هنا
+
       - name: Build web project
         run: npm run build
+        
       - name: Sync with Capacitor
-        run: npx @capacitor/cli sync android
+        run: npx cap sync android
+        
       - name: Build Android APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
+
+      - name: Rename APK File
+        run: mv android/app/build/outputs/apk/debug/app-debug.apk "android/app/build/outputs/apk/debug/مصحف أحمد وليلى.apk"
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: My-Quran-App-Debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Mushaf-Ahmed-Layla-APK
+          path: "android/app/build/outputs/apk/debug/مصحف أحمد وليلى.apk"
