@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.AhmedLaila.Quran"
+    namespace = "com.Ahmed11Laila.Quran"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.AhmedLaila.Quran"
