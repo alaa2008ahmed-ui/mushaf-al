@@ -12,6 +12,7 @@ import Qibla from './pages/Qibla';
 import ThemeSelector from './components/ThemesModal';
 import AdkarSabahMasaa from './pages/AdkarSabahMasaa';
 import Adia from './pages/Adia';
+import QuranReader from './pages/QuranReader'; // استيراد المكون الجديد
 
 // --- Main App Component ---
 function App() {
@@ -74,32 +75,42 @@ function App() {
   // Effect to set up device-specific features and event listeners ONCE.
   useEffect(() => {
     const onDeviceReady = () => {
-      // 1. Add the robust back button listener.
-      document.addEventListener('backbutton', handleBackButton, false);
-
-      // 2. Keep the screen on as long as the app is running.
+      console.log("Cordova deviceready event fired. Initializing native features...");
+      
+      // 1. Keep the screen on as long as the app is running (Insomnia plugin).
       const win = window as any;
       if (win.plugins && win.plugins.insomnia) {
         win.plugins.insomnia.keepAwake(
-          () => console.log('Insomnia: Screen will stay on.'),
-          () => console.warn('Insomnia: Failed to keep screen on.')
+          () => console.log("Insomnia: Screen will stay on."),
+          () => console.warn("Insomnia: Failed to keep screen on.")
         );
+      } else {
+        console.log("Insomnia plugin not found. Screen may turn off.");
       }
+
+      // 2. Add the robust back button listener for exit confirmation.
+      // This listener will be managed by React's lifecycle.
+      document.addEventListener('backbutton', handleBackButton, false);
+      console.log("Back button handler attached.");
     };
 
     // This is the entry point for all Cordova-related initializations.
     document.addEventListener('deviceready', onDeviceReady, false);
 
     // Cleanup function to remove listeners when the component unmounts.
+    // This is important for a clean app lifecycle in a single-page application.
     return () => {
       document.removeEventListener('deviceready', onDeviceReady, false);
       document.removeEventListener('backbutton', handleBackButton, false);
+      console.log("Cleaned up deviceready and backbutton listeners.");
     };
   }, [handleBackButton]); // Dependency ensures the correct handler is always attached.
 
 
   const handleNavigate = (pageId) => {
-    if (pageId === 'salah-adhkar') {
+    if (pageId === 'quran') { // إضافة حالة التنقل إلى المصحف
+        setPage('quran');
+    } else if (pageId === 'salah-adhkar') {
         setPage('salah-adhkar');
     } else if (pageId === 'calendar') {
         setPage('calendar');
@@ -129,6 +140,8 @@ function App() {
 
   const renderPage = () => {
     switch(page) {
+      case 'quran': // إضافة حالة عرض مكون المصحف
+        return <QuranReader onBack={() => setPage('home')} />;
       case 'salah-adhkar':
         return <AthkarAlSalah onBack={() => setPage('home')} />;
       case 'calendar':
