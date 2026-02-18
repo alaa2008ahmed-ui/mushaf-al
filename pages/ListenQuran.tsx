@@ -151,10 +151,10 @@ function ListenQuran({ onBack }) {
 
             <main className="w-full max-w-xl mx-auto px-4 pt-4 flex-1 overflow-y-auto pb-24 space-y-4">
                 <div className="themed-card rounded-2xl p-4 space-y-3">
-                     <select id="reciter-select" value={reciterId} onChange={(e) => setReciterId(e.target.value)} className="w-full p-3 rounded-lg themed-bg-alt themed-text border themed-card font-bold">
+                     <select id="reciter-select" value={reciterId} onChange={(e) => setReciterId(e.target.value)} className="w-full p-3 rounded-lg themed-bg-alt themed-text border themed-card-border font-bold">
                         {RECITERS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                      </select>
-                     <select id="surah-select" value={surahNumber} onChange={(e) => setSurahNumber(Number(e.target.value))} className="w-full p-3 rounded-lg themed-bg-alt themed-text border themed-card font-bold">
+                     <select id="surah-select" value={surahNumber} onChange={(e) => setSurahNumber(Number(e.target.value))} className="w-full p-3 rounded-lg themed-bg-alt themed-text border themed-card-border font-bold">
                         {SURAH_LIST.map(s => <option key={s.number} value={s.number}>{s.number} - {s.name}</option>)}
                      </select>
                 </div>
@@ -189,7 +189,7 @@ function ListenQuran({ onBack }) {
                         <button onClick={handlePrevSurah} className="p-3 rounded-full themed-bg-alt w-16 h-16 flex items-center justify-center shadow-md active:scale-95 transition">
                             <i className="fa-solid fa-forward-step fa-xl transform rotate-180" style={{color: theme.palette[1]}}></i>
                         </button>
-                        <button onClick={handlePlayPause} disabled={isLoading && !isPlaying} className="p-3 rounded-full w-20 h-20 flex items-center justify-center shadow-lg active:scale-95 transition disabled:opacity-50" style={{background: theme.palette[0], color: theme.textColor}}>
+                        <button onClick={handlePlayPause} disabled={isLoading && !isPlaying} className="p-3 rounded-full w-20 h-20 flex items-center justify-center shadow-lg active:scale-95 transition disabled:opacity-50" style={{background: theme.palette[0], color: 'white'}}>
                             {isLoading && !isPlaying ? <i className="fa-solid fa-spinner fa-spin fa-2x"></i> : <i className={`fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'} fa-2x`}></i>}
                         </button>
                         <button onClick={handleNextSurah} className="p-3 rounded-full themed-bg-alt w-16 h-16 flex items-center justify-center shadow-md active:scale-95 transition">

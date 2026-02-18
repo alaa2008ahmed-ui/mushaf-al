@@ -21,7 +21,7 @@ function App() {
 
   const handleNavigate = (pageId) => {
     if (pageId === 'quran') {
-        setPage('quran');
+        window.location.href = 'QuranV.html';
     } else if (pageId === 'salah-adhkar') {
         setPage('salah-adhkar');
     } else if (pageId === 'calendar') {

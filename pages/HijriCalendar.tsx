@@ -230,9 +230,8 @@ function HijriCalendar({ onBack }) {
                                 {activeTab === 'gregorianToHijri' ? "تحويل إلى هجري" : "تحويل إلى ميلادي"}
                             </button>
                         </div>
-                        <p className={`text-center text-xs sm:text-sm themed-text-muted`}>{message}</p>
                         <div className={`w-full p-4 sm:p-6 rounded-xl text-center font-extrabold themed-card min-h-[90px] flex flex-col justify-center`}>
-                            <p className={`text-xs themed-text-muted mb-1`}>النتيجة:</p>
+                            <p className={`text-xs themed-text-muted mb-1`}>{message}</p>
                             <p className={`text-2xl sm:text-3xl leading-tight`} style={{color: theme.palette[0]}}>{result || '---'}</p>
                         </div>
                     </div>

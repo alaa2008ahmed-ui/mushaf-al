@@ -31,7 +31,7 @@ function MainMenu({ onNavigate, onOpenThemes }) {
       <div className="h-screen w-full flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto pb-24 fade-in">
           <div className="main-layout" style={{ fontFamily: theme.font }}>
-              <div className="text-center pt-1 px-4">
+              <div className="text-center pt-12 px-4">
                   <p className="font-bold leading-tight mb-0.5" style={{ color: theme.textColor, fontSize: '1.1rem', textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
                       {currentVerse.text}
                   </p>
@@ -50,7 +50,7 @@ function MainMenu({ onNavigate, onOpenThemes }) {
                   </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 w-full max-w-sm mx-auto flex-1 content-center mt-1">
+              <div className="grid grid-cols-2 gap-3 w-full max-w-sm mx-auto flex-1 content-center mt-6">
                   <NavButton label="📖 القرآن الكريم" onClick={() => onNavigate('quran')} className="col-span-2 h-14" color={theme.palette[0]} />
                   <NavButton label="🎧 الاستماع للقرآن" onClick={() => onNavigate('listen')} className="col-span-2 h-12" color={theme.palette[0]} />
                   <NavButton label="🕌 أذكار الصلاة" onClick={() => onNavigate('salah-adhkar')} className="col-span-2 h-12" color={theme.palette[0]} />
@@ -64,7 +64,7 @@ function MainMenu({ onNavigate, onOpenThemes }) {
                   <NavButton label="🧭 القبلة" onClick={() => onNavigate('qibla')} className="h-11" color={theme.palette[1]} />
               </div>
 
-              <div className="themed-card p-2.5 rounded-2xl text-center w-full max-w-sm mx-auto mb-10">
+              <div className="themed-card p-2.5 rounded-2xl text-center w-full max-w-sm mx-auto mt-8 mb-10">
                   <p className="text-[14px] font-bold" style={{ color: theme.textColor }}>
                       اللهم ارحمهما واغفر لهما واجعل مثواهما الجنة
                   </p>
