@@ -18,18 +18,24 @@ function App() {
   const [page, setPage] = useState('home');
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
 
-  // Use a ref to hold the current page value to avoid stale closures in the event listener
+  // Use refs to hold the current state values to avoid stale closures in the event listener
   const pageRef = useRef(page);
   useEffect(() => {
     pageRef.current = page;
   }, [page]);
 
+  const isThemeSelectorOpenRef = useRef(isThemeSelectorOpen);
   useEffect(() => {
-    const onBackKeyDown = (e) => {
+    isThemeSelectorOpenRef.current = isThemeSelectorOpen;
+  }, [isThemeSelectorOpen]);
+
+
+  // This effect sets up device listeners and screen wake lock.
+  useEffect(() => {
+    const onBackKeyDown = (e: Event) => {
       e.preventDefault();
 
-      // The 'isThemeSelectorOpen' state is directly available here because we include it in the dependency array.
-      if (isThemeSelectorOpen) {
+      if (isThemeSelectorOpenRef.current) {
         setIsThemeSelectorOpen(false);
         return;
       }
@@ -37,30 +43,21 @@ function App() {
       if (pageRef.current !== 'home') {
         setPage('home');
       } else {
-        // We are on the home page, show exit confirmation
-        // Use navigator.notification for native dialogs in Cordova
-        // FIX: Cast navigator to `any` to access Cordova-specific `notification` property.
         if ((navigator as any).notification && typeof (navigator as any).notification.confirm === 'function') {
           (navigator as any).notification.confirm(
-            'يتم الخروج من مصحف احمد وليلى', // message
+            'هل تريد الخروج من تطبيق احمد وليلى',
             (buttonIndex) => {
-              // The first button is 'نعم' (index 1)
               if (buttonIndex === 1) {
-                // FIX: Cast navigator to `any` to access Cordova-specific `app` property.
                 if ((navigator as any).app && typeof (navigator as any).app.exitApp === 'function') {
                   (navigator as any).app.exitApp();
                 }
               }
             },
-            'تأكيد الخروج', // title
-            ['نعم', 'لا'] // buttonLabels, Yes is at index 1, No is at index 2
+            'تأكيد الخروج',
+            ['نعم', 'لا']
           );
         } else {
-          // Fallback for environments where navigator.notification is not available
-          if (window.confirm('يتم الخروج من مصحف احمد وليلى')) {
-            // This is a browser-based fallback and might not exit the app
-            // but it's better than nothing. navigator.app.exitApp() is preferred.
-            // FIX: Cast navigator to `any` to access Cordova-specific `app` property.
+          if (window.confirm('هل تريد الخروج من تطبيق احمد وليلى')) {
             if ((navigator as any).app && typeof (navigator as any).app.exitApp === 'function') {
               (navigator as any).app.exitApp();
             }
@@ -69,19 +66,77 @@ function App() {
       }
     };
 
-    const onDeviceReady = () => {
-      document.addEventListener('backbutton', onBackKeyDown, false);
+    // --- Screen Wake Lock Logic ---
+    let wakeLock: WakeLockSentinel | null = null;
+    
+    const requestWakeLock = async () => {
+      if (document.visibilityState !== 'visible') return;
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('Screen Wake Lock is active.');
+          wakeLock.addEventListener('release', () => {
+            console.log('Screen Wake Lock was released.');
+          });
+        } catch (err) {
+          console.error(`WakeLock request failed: ${(err as Error).name}, ${(err as Error).message}`);
+          wakeLock = null;
+        }
+      } else {
+        console.warn('Screen Wake Lock API is not supported.');
+      }
     };
 
-    // Cordova's 'deviceready' event is crucial.
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            requestWakeLock();
+        }
+    };
+    // --- End Wake Lock Logic ---
+
+    const onDeviceReady = () => {
+      document.addEventListener('backbutton', onBackKeyDown, false);
+      
+      if ((window as any).plugins && (window as any).plugins.insomnia) {
+        (window as any).plugins.insomnia.keepAwake(
+          () => console.log('Insomnia plugin is keeping the screen on.'),
+          () => {
+            console.warn('Insomnia plugin failed, falling back to Screen Wake Lock API.');
+            requestWakeLock();
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+          }
+        );
+      } else {
+        console.log('Insomnia plugin not found, using Screen Wake Lock API.');
+        requestWakeLock();
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+      }
+    };
+
     document.addEventListener('deviceready', onDeviceReady, false);
 
-    // Cleanup function to remove listeners when the component unmounts
+    // FIX: Add type assertion to 'any' for 'window.cordova' to resolve TypeScript error. The 'cordova' property is added by the Cordova framework at runtime and is not part of the standard 'window' type definition.
+    if (!(window as any).cordova || (window as any).cordova.platformId === 'browser') {
+        console.log('Browser environment detected, using Screen Wake Lock API.');
+        requestWakeLock();
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+    
     return () => {
       document.removeEventListener('deviceready', onDeviceReady, false);
       document.removeEventListener('backbutton', onBackKeyDown, false);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      
+      if (wakeLock !== null) {
+        wakeLock.release();
+        wakeLock = null;
+      }
+      
+      if ((window as any).plugins && (window as any).plugins.insomnia) {
+        (window as any).plugins.insomnia.allowSleepAgain(() => {}, () => {});
+      }
     };
-  }, [isThemeSelectorOpen]); // Rerun effect if isThemeSelectorOpen changes.
+  }, []); // Empty dependency array ensures this effect runs only once on mount.
 
 
   const handleNavigate = (pageId) => {

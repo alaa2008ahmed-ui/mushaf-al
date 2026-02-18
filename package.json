@@ -1,5 +1,5 @@
 {
-  "name": "mushaf-a&l-1.10",
+  "name": "mushaf-a&l-1.11",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,16 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@capacitor/android": "^8.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^8.1.0",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "fs-extra": "^11.3.3",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
