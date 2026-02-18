@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import BottomBar from '../components/BottomBar';
-// FIX: The `Theme` type is exported from `themes.ts`, not `ThemeContext.ts`.
 import { useTheme } from '../context/ThemeContext';
 import type { Theme } from '../context/themes';
 import { DEFAULT_PHRASES } from '../data/tasbeehData';
@@ -39,7 +38,6 @@ const vibrate = (pattern: number | number[] = 50) => {
     if (navigator.vibrate) navigator.vibrate(pattern);
 };
 
-// FIX: Moved helper components outside the main component to prevent re-definition on every render.
 const ThreeDButton = ({ label, onClick, color, padding = "py-3 px-4 text-base", children = null, theme }: {label: string, onClick: () => void, color: string, padding?: string, children?: React.ReactNode, theme: Theme}) => (
     <button
         onClick={onClick}
@@ -79,7 +77,6 @@ function Tasbeeh({ onBack }) {
     const [isCountingStopped, setIsCountingStopped] = useState(false);
     const [modals, setModals] = useState({ target: false, phrase: false, add: false, delete: false });
     const [message, setMessage] = useState({ text: '', type: 'green', visible: false });
-    // FIX: Use refs for controlled inputs in modals instead of direct DOM access.
     const targetInputRef = useRef<HTMLInputElement>(null);
     const newPhraseInputRef = useRef<HTMLInputElement>(null);
 

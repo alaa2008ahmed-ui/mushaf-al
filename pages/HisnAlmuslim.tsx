@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
@@ -10,7 +11,7 @@ function HisnAlmuslim({ onBack }) {
     const door = hesnDoors.find(d => d.id === currentDoorId);
 
     const DoorsScreen = () => (
-        <div className="space-y-4 fade-in">
+        <div className="p-4 space-y-3">
             {hesnDoors.map((door, index) => {
                 const colorType = index % 2 === 0 ? 'primary' : 'secondary';
                 return (
@@ -57,6 +58,7 @@ function HisnAlmuslim({ onBack }) {
             </div>
         );
     };
+
 
     return (
         <div className="h-screen flex flex-col overflow-hidden">

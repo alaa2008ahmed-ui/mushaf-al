@@ -13,6 +13,8 @@ export interface Theme {
 export const presetThemes: { [key: string]: Theme } = {
     daylight: { name: "افتراضي", bgColor: "#F3F4F6", textColor: "#111827", font: "'Cairo', sans-serif", palette: ["#3b82f6", "#10b981", "#9333ea"] },
     royal_indigo: { name: "ملكي", bgColor: "#191D3A", textColor: "#EAEAEA", font: "'Cairo', sans-serif", palette: ["#46C3B8", "#F4B860", "#a78bfa"], barBg: "#2A3045", barBorder: "1px solid #4A5568" },
+    glassy_dark: { name: "زجاجي داكن", bgColor: "#0c0a09", textColor: "#e7e5e4", font: "'Cairo', sans-serif", palette: ["#a78bfa", "#34d399", "#f472b6"], barBg: "rgba(28, 25, 23, 0.7)", barBorder: "1px solid rgba(255, 255, 255, 0.1)" },
+    glassy_light: { name: "زجاجي فاتح", bgColor: "#f5f5f4", textColor: "#1c1917", font: "'Cairo', sans-serif", palette: ["#2563eb", "#ea580c", "#16a34a"], barBg: "rgba(255, 255, 255, 0.7)", barBorder: "1px solid rgba(0, 0, 0, 0.07)" },
     pure_black: { name: "أسود فاحم", bgColor: "#000000", palette: ["#444444", "#666666", "#888888"], textColor: "#ffffff", font: "'Cairo', sans-serif", barBg: "#111111", barBorder: "1px solid #444" },
     kaaba: { name: "الكعبة", bgColor: "#000000", palette: ["#1a1a1a", "#d4af37", "#2d2d2d"], textColor: "#f5e6d3", font: "'Amiri', serif", barBg: "#1a1a1a", barBorder: "1px solid #d4af37" },
     masjid: { name: "النبوي", bgColor: "#064e3b", palette: ["#047857", "#059669", "#10b981"], textColor: "#ecfdf5", font: "'Scheherazade New', serif", barBg: "#047857", barBorder: "1px solid #10b981" },

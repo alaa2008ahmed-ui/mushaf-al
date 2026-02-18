@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';

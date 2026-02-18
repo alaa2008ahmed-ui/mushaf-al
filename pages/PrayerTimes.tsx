@@ -2,8 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
-
-const prayerNamesAr = { Fajr: 'الفجر', Sunrise: 'الشروق', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
+import { prayerNamesAr } from '../data/prayerTimesData';
 
 // --- Default Tones Configuration ---
 const defaultTones = [
@@ -304,6 +303,7 @@ function PrayerTimes({ onBack }) {
         } else {
             const selectedTone = defaultTones.find(t => t.path === value);
             if (selectedTone) {
+                playNotificationSound(selectedTone.path); // Play preview
                 setConfig(prev => ({
                     ...prev,
                     tones: { ...prev.tones, [currentEditingKey]: { name: selectedTone.name, data: selectedTone.path }}
@@ -317,9 +317,11 @@ function PrayerTimes({ onBack }) {
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
+                const audioDataUrl = event.target.result as string;
+                playNotificationSound(audioDataUrl); // Play preview
                 setConfig(prev => ({
                     ...prev,
-                    tones: { ...prev.tones, [currentEditingKey]: { name: file.name, data: event.target.result }}
+                    tones: { ...prev.tones, [currentEditingKey]: { name: file.name, data: audioDataUrl }}
                 }));
             };
             reader.readAsDataURL(file);

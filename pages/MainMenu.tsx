@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import WhatsAppButton from '../components/WhatsAppButton';
-import { verses } from '../data/mainMenuData';
+import { verses, navItems } from '../data/mainMenuData';
 
 const NavButton = ({ label, onClick, className, color }) => (
     <div className={`h-full ${className}`}>
@@ -30,8 +30,8 @@ function MainMenu({ onNavigate, onOpenThemes }) {
     <>
       <div className="h-screen w-full flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto pb-24 fade-in">
-          <div className="main-layout" style={{ fontFamily: theme.font }}>
-              <div className="text-center pt-12 px-4">
+          <div className="main-layout px-4" style={{ fontFamily: theme.font }}>
+              <div className="text-center pt-12">
                   <p className="font-bold leading-tight mb-0.5" style={{ color: theme.textColor, fontSize: '1.1rem', textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
                       {currentVerse.text}
                   </p>

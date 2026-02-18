@@ -40,7 +40,7 @@ function ThemeSelector({ onClose }) {
     return (
         <div 
             ref={wrapperRef} 
-            className="theme-selector-container fixed bottom-[70px] left-1/2 w-full max-w-lg p-2 z-50"
+            className="theme-selector-container fixed bottom-[calc(70px+env(safe-area-inset-bottom,0px))] left-1/2 w-full max-w-lg p-2 z-50"
         >
             <div className="themed-card p-3 rounded-2xl shadow-2xl">
                 <div className="grid grid-cols-2 gap-2 mb-2">

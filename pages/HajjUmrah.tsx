@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, FC } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
@@ -136,7 +137,7 @@ const UmrahScreen = ({ theme }) => (
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             <div className="themed-card rounded-2xl p-3">
-                <h3 className="font-bold text-gray-900 mb-1">أركان العمرة</h3>
+                <h3 className="font-bold mb-1">أركان العمرة</h3>
                 <ul className="list-disc pr-4 space-y-0.5 themed-text-muted">
                     <li>الإحرام (النية).</li>
                     <li>الطواف بالبيت.</li>
@@ -144,14 +145,14 @@ const UmrahScreen = ({ theme }) => (
                 </ul>
             </div>
             <div className="themed-card rounded-2xl p-3">
-                <h3 className="font-bold text-gray-900 mb-1">واجبات العمرة</h3>
+                <h3 className="font-bold mb-1">واجبات العمرة</h3>
                 <ul className="list-disc pr-4 space-y-0.5 themed-text-muted">
                     <li>الإحرام من الميقات.</li>
                     <li>الحلق أو التقصير.</li>
                 </ul>
             </div>
             <div className="themed-card rounded-2xl p-3">
-                <h3 className="font-bold text-gray-900 mb-1">ما يفسد العمرة</h3>
+                <h3 className="font-bold mb-1">ما يفسد العمرة</h3>
                  <ul className="list-disc pr-4 space-y-0.5 themed-text-muted">
                     <li>الجماع قبل التحلّل.</li>
                     <li>ترك ركن من الأركان.</li>
@@ -209,7 +210,7 @@ const HajjScreen = ({ hajjType, setHajjType, theme }) => (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                     {hajjTamattuPlan.map((day, i) => (
                         <div key={i} className="themed-card rounded-2xl p-3">
-                            <h5 className="font-bold text-gray-900 mb-1">{day.day}</h5>
+                            <h5 className="font-bold mb-1">{day.day}</h5>
                             <ul className="list-disc pr-4 space-y-1 themed-text-muted">{day.actions.map((action, j)=><li key={j} dangerouslySetInnerHTML={{__html: action}}></li>)}</ul>
                         </div>
                     ))}

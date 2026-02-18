@@ -107,6 +107,7 @@
           background: rgba(var(--top-bar-rgb, 26, 34, 51), 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
           color: var(--text-color, #ffffff); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border-bottom: 1px solid rgba(255, 255, 255, 0.1);
           position: sticky; top: 0; z-index: 40;
+          padding-top: env(safe-area-inset-top);
       }
       .app-top-bar__inner { max-width: 900px; margin: 0 auto; padding: 1rem 1.25rem 1.1rem; display: flex; flex-direction: column; gap: 0.35rem; text-align: center; }
       .app-top-bar__title { font-weight: 800; letter-spacing: 0.03em; }
@@ -118,8 +119,11 @@
           background-color: var(--bottom-bar-bg);
           border-top: 1px solid var(--bottom-bar-border);
           backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-          box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.12); z-index: 50; padding: 0.5rem 1rem;
+          box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.12); z-index: 50; padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom));
           transition: background-color 0.15s ease, border-top 0.15s ease;
+      }
+      main {
+        padding-bottom: calc(6rem + env(safe-area-inset-bottom));
       }
       .app-bottom-bar__inner { max-width: 900px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 1rem; }
       .bar-button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 700; font-size: 0.95rem; border-radius: 999px; padding: 0.75rem 1rem; transition: all 0.15s ease; box-shadow: 0 5px 15px -3px rgba(0,0,0,0.15); }
@@ -158,7 +162,7 @@
 
       .tasbeeh-counter { background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 65%); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4), inset 0 -10px 15px -5px rgba(0,0,0,0.25); }
       .tasbeeh-counter:active { transform: scale(0.95); box-shadow: 0 10px 20px -10px rgba(0,0,0,0.3), inset 0 -6px 10px -4px rgba(0,0,0,0.25); }
-      #whatsapp-button-container { position: fixed; bottom: 85px; right: 16px; z-index: 50; }
+      #whatsapp-button-container { position: fixed; bottom: calc(85px + env(safe-area-inset-bottom, 0px)); right: 16px; z-index: 50; }
       #app-container, #root { width: 100%; height: 100%; position: relative; z-index: 1; }
       
       .btn-3d-effect {
