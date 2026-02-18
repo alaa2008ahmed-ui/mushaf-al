@@ -21,7 +21,7 @@ jobs:
       - name: Build web project
         run: npm run build
       - name: Sync with Capacitor
-        run: npx cap sync android
+        run: npx @capacitor/cli sync android
       - name: Build Android APK
         run: |
           cd android
