@@ -6,11 +6,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: actions/setup-node@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-      
-      - name: set up JDK 21
+          cache: 'npm' # يسرع عملية التحميل في المرات القادمة
+
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -20,7 +22,8 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          npm install @capacitor/cli # نضمن وجود الأداة هنا
+          # نثبت الـ CLI محلياً لضمان وجود أمر "cap"
+          npm install @capacitor/cli @capacitor/core @capacitor/android
 
       - name: Build web project
         run: npm run build
@@ -35,10 +38,12 @@ jobs:
           ./gradlew assembleDebug
 
       - name: Rename APK File
-        run: mv android/app/build/outputs/apk/debug/app-debug.apk "android/app/build/outputs/apk/debug/مصحف أحمد وليلى.apk"
+        run: |
+          # نستخدم علامات الاقتباس للتعامل مع المسافات والحروف العربية
+          mv android/app/build/outputs/apk/debug/app-debug.apk "android/app/build/outputs/apk/debug/مصحف أحمد وليلى.apk"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Mushaf-Ahmed-Layla-APK
-          path: "android/app/build/outputs/apk/debug/مصحف أحمد وليلى.apk"
+          name: Mushaf-App-Package
+          path: "android/app/build/outputs/apk/debug/*.apk" # سيقوم برفع أي ملف APK في المجلد بالاسم الجديد
