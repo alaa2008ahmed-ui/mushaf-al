@@ -7,7 +7,6 @@ interface MushafPageProps {
     highlightedAyahId: string | null;
     onAyahClick: (surah: number, ayah: number) => void;
     onVerseClick: (surah: number, ayah: number, event: React.MouseEvent) => void;
-    onSajdahVisible: (surah: string, ayah: number) => void;
     settings?: {
         fontSize: number;
         fontFamily: string;
@@ -16,31 +15,8 @@ interface MushafPageProps {
     };
 }
 
-const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, highlightedAyahId, onAyahClick, onVerseClick, onSajdahVisible, settings }) => {
-    const observerRef = useRef<IntersectionObserver | null>(null);
+const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, highlightedAyahId, onAyahClick, onVerseClick, settings }) => {
     const pageRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const el = entry.target as HTMLElement;
-                    if (el.dataset.surah && el.dataset.ayah) {
-                        onSajdahVisible(el.dataset.surah, Number(el.dataset.ayah));
-                        observer.unobserve(el); // To show only once per appearance
-                    }
-                }
-            });
-        }, { root: null, rootMargin: '0px 0px -80% 0px' });
-
-        observerRef.current = observer;
-
-        const sajdahAyahs = pageRef.current?.querySelectorAll('.ayah-sajdah');
-        sajdahAyahs?.forEach(el => observer.observe(el));
-
-        return () => observer.disconnect();
-    }, [pageData, onSajdahVisible]);
-
 
     if (!pageData || !pageData.length) return <div className="mushaf-page" style={{height: '1000px'}}></div>; // Placeholder for height calculation
     
@@ -88,6 +64,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                                 className={`ayah-text-block ${highlightedAyahId === id ? 'highlighted' : ''} ${isSajdah ? 'ayah-sajdah' : ''}`} 
                                 onClick={() => onAyahClick(ayah.sNum, ayah.numberInSurah)} 
                                 data-sajdah={isSajdah} 
+                                data-snum={ayah.sNum}
                                 data-surah={ayah.sName.replace('سورة','').trim()} 
                                 data-ayah={ayah.numberInSurah}
                             >
