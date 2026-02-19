@@ -103,7 +103,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
     const stopAudio = useCallback(() => {
         if (audioRef.current) {
             audioRef.current.pause();
-            // Setting src to '' is a standard way to stop network requests and reset the element.
             audioRef.current.src = '';
         }
         setIsPlaying(false);
@@ -227,17 +226,13 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
             const audio = audioRef.current;
             if (!audio) return;
 
-            // This error (code 4) often fires when src is intentionally changed or playback is aborted.
-            // We also check for empty src, as we set it to "" to stop playback.
-            // These are not real errors, so we don't show a toast.
-            if (!audio.src || (audio.error && audio.error.code === 4)) { // MEDIA_ERR_ABORTED
+            if (!audio.src || (audio.error && (audio.error.code === 4 || audio.error.code === 20))) { // MEDIA_ERR_ABORTED (4) or empty src
                 console.log("Audio playback stopped or aborted, likely intentionally. No error toast will be shown.");
                 setIsAudioLoading(false);
                 setIsPlaying(false);
                 return;
             }
             
-            // For any other genuine error, show the toast.
             setIsAudioLoading(false);
             setIsPlaying(false);
             showToast('خطأ في تحميل المقطع الصوتي.');
@@ -278,7 +273,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
         }
     }, [isPlaying, isAudioLoading, currentAyah, playAudio, stopAudio]);
 
-    // Theme & Settings Event Listeners
     useEffect(() => {
         const handleThemeChange = () => {
             const themeId = localStorage.getItem('current_theme_id') || 'default';
@@ -293,7 +287,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
                 bgColor: newTheme.bg,
                 textColor: newTheme.text,
                 fontFamily: newTheme.font,
-                theme: 'light'
             };
             
             setSettings(updatedSettings);
@@ -326,12 +319,15 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
         root.style.setProperty('--search-result-border', currentTheme.accent);
         root.style.setProperty('--search-result-text', currentTheme.cardText);
         
-        if (settings.theme === 'dark') {
+        const darkBgs = ['#000000', '#2c241b', '#101010', '#0f172a', '#2e1065'];
+        const isDark = currentTheme.bg && darkBgs.includes(currentTheme.bg.toLowerCase());
+
+        if (isDark) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
         }
-    }, [currentTheme, settings.theme]);
+    }, [currentTheme]);
 
     useEffect(() => {
         const loadQuranData = async () => {
@@ -427,7 +423,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
     const saveBookmark = () => { if (!currentAyah) { showToast('اختر آية أولاً'); return; } const storedBookmarks = JSON.parse(localStorage.getItem('quran_bookmarks_list') || '[]'); const date = new Date(); const newBookmark = { id: Date.now(), s: currentAyah.s, a: currentAyah.a, date: date.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' }), time: date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) }; const newBookmarks = [newBookmark, ...storedBookmarks]; localStorage.setItem('quran_bookmarks_list', JSON.stringify(newBookmarks)); setBookmarks(newBookmarks); showToast('تم حفظ الإشارة المرجعية'); };
     const deleteBookmark = (id) => { const newBookmarks = bookmarks.filter(b => b.id !== id); localStorage.setItem('quran_bookmarks_list', JSON.stringify(newBookmarks)); setBookmarks(newBookmarks); };
 
-    // --- Auto-scroll Logic ---
     const PAGES_PER_JUZ = 20;
     const PAGE_HEIGHT_FALLBACK = 1300;
 
@@ -478,7 +473,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
         scrollAccumulatorRef.current = 0;
         autoScrollPausedRef.current = false;
 
-        // FIX: Ensure settings.scrollMinutes is treated as a string for parseInt, which prevents a TypeScript error in strict mode where a number cannot be passed to parseInt.
         const minutesPerJuz = parseInt(String(settings.scrollMinutes), 10) || 20;
         const tickRate = 20;
         
@@ -591,8 +585,8 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
             className={`quran-reader-container ${autoScrollState.isActive && !autoScrollState.isPaused && hideUIOnScroll ? 'fullscreen-active' : ''}`} 
             id="app-container"
             style={{
-                backgroundColor: settings.theme === 'dark' ? '#000' : settings.bgColor,
-                color: settings.theme === 'dark' ? '#fff' : settings.textColor,
+                backgroundColor: settings.bgColor,
+                color: settings.textColor,
                 fontFamily: settings.fontFamily,
                 position: 'relative',
                 height: '100dvh',
@@ -652,7 +646,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
                 <button id="btn-home" onClick={onBack} className="bottom-bar-button btn-green flex-1 mx-1 h-10" style={getToolbarStyle('btn-home', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBg)}><i className="fa-solid fa-home"></i><span className="hidden sm:inline">الرئيسية</span></button>
             </footer>
             
-            {/* --- Modals --- */}
             {activeModals['surah-modal'] && <SurahJuzModal type="surah" quranData={quranData} onSelect={(s, a) => jumpToAyah(s, a)} onClose={() => closeModal('surah-modal')} />}
             {activeModals['juz-modal'] && <SurahJuzModal type="juz" quranData={quranData} onSelect={(j: number) => jumpToAyah(JUZ_MAP[j - 1].s, JUZ_MAP[j - 1].a)} onClose={() => closeModal('juz-modal')} />}
             {activeModals['bookmarks-modal'] && <BookmarksModal bookmarks={bookmarks} quranData={quranData} onSelect={(s,a) => jumpToAyah(s,a)} onDelete={deleteBookmark} onClose={() => closeModal('bookmarks-modal')} />}

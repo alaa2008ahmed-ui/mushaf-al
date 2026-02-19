@@ -21,7 +21,6 @@ function App() {
 
   const page = history[history.length - 1];
 
-  // Refs to hold current state, preventing stale closures in event listeners.
   const historyRef = useRef(history);
   useEffect(() => {
     historyRef.current = history;
@@ -36,39 +35,32 @@ function App() {
     setHistory(prev => (prev.length > 1 ? prev.slice(0, -1) : prev));
   }, []);
 
-  // Memoized handler for the back button press for stability.
   const handleBackButton = useCallback((event: Event) => {
-    // This is the most critical part: prevent the default OS action (like exiting the app).
     event.preventDefault();
 
     if (isThemeSelectorOpenRef.current) {
-      // If the theme selector is open, the back button should close it first.
       setIsThemeSelectorOpen(false);
       return;
     }
 
     if (historyRef.current.length > 1) {
-      // If we are on any page other than home, go back one step in history.
       navigateBack();
     } else {
-      // If we are on the home page, show an exit confirmation dialog.
       const appNavigator = window.navigator as any;
       if (appNavigator.notification && typeof appNavigator.notification.confirm === 'function') {
         appNavigator.notification.confirm(
-          'هل تريد الخروج من مصحف احمد وليلى؟', // message
+          'هل تريد الخروج من مصحف احمد وليلى؟',
           (buttonIndex) => {
-            // In Cordova, buttonIndex is 1-based. 'نعم' is the first button.
             if (buttonIndex === 1) {
               if (appNavigator.app && typeof appNavigator.app.exitApp === 'function') {
                 appNavigator.app.exitApp();
               }
             }
           },
-          'تأكيد الخروج', // title
-          ['نعم', 'لا'] // buttonLabels
+          'تأكيد الخروج',
+          ['نعم', 'لا']
         );
       } else {
-        // Fallback for browsers or environments without the dialog plugin.
         if (window.confirm('هل تريد الخروج من مصحف احمد وليلى؟')) {
           if (appNavigator.app && typeof appNavigator.app.exitApp === 'function') {
             appNavigator.app.exitApp();
@@ -78,43 +70,49 @@ function App() {
     }
   }, [navigateBack]);
 
-  // Effect to set up device-specific features and event listeners ONCE.
+  // Effect for one-time device-ready setup (e.g., screen wake lock)
   useEffect(() => {
     const onDeviceReady = () => {
-      console.log("Cordova deviceready event fired. Initializing native features...");
-      
-      // 1. Keep the screen on as long as the app is running (Insomnia plugin).
-      const win = window as any;
-      if (win.plugins && win.plugins.insomnia) {
-        win.plugins.insomnia.keepAwake(
-          () => console.log("Insomnia: Screen will stay on."),
-          () => console.warn("Insomnia: Failed to keep screen on.")
-        );
-      } else {
-        console.log("Insomnia plugin not found. Screen may turn off.");
-      }
-
-      // 2. Add the robust back button listener for exit confirmation.
-      // This listener will be managed by React's lifecycle.
-      document.addEventListener('backbutton', handleBackButton, false);
-      console.log("Back button handler attached.");
+        console.log("Cordova deviceready event fired. Initializing native features...");
+        
+        const win = window as any;
+        if (win.plugins && win.plugins.insomnia) {
+            win.plugins.insomnia.keepAwake(
+                () => console.log("Insomnia: Screen will stay on."),
+                () => console.warn("Insomnia: Failed to keep screen on.")
+            );
+        } else {
+            console.log("Insomnia plugin not found. Screen may turn off.");
+        }
     };
-
-    // This is the entry point for all Cordova-related initializations.
     document.addEventListener('deviceready', onDeviceReady, false);
 
-    // Cleanup function to remove listeners when the component unmounts.
-    // This is important for a clean app lifecycle in a single-page application.
+    // Cleanup: This runs when the app is fully closed/terminated.
     return () => {
-      document.removeEventListener('deviceready', onDeviceReady, false);
-      document.removeEventListener('backbutton', handleBackButton, false);
-      console.log("Cleaned up deviceready and backbutton listeners.");
-      const win = window as any;
-      if (win.plugins && win.plugins.insomnia && win.plugins.insomnia.allowSleepAgain) {
-        win.plugins.insomnia.allowSleepAgain();
-      }
+        document.removeEventListener('deviceready', onDeviceReady, false);
+        const win = window as any;
+        if (win.plugins && win.plugins.insomnia && win.plugins.insomnia.allowSleepAgain) {
+            win.plugins.insomnia.allowSleepAgain(() => console.log("Insomnia: Allowed screen to sleep."), () => {});
+        }
     };
-  }, [handleBackButton]); // Dependency ensures the correct handler is always attached.
+  }, []); // Empty dependency array ensures this runs only once on mount.
+
+  // Effect for managing the back button listener specifically
+  useEffect(() => {
+    const addBackButtonListener = () => {
+        document.addEventListener('backbutton', handleBackButton, false);
+        console.log("Back button handler attached.");
+    };
+
+    // We must wait for deviceready before adding the backbutton listener.
+    document.addEventListener('deviceready', addBackButtonListener, false);
+
+    return () => {
+        document.removeEventListener('deviceready', addBackButtonListener, false);
+        document.removeEventListener('backbutton', handleBackButton, false);
+        console.log("Cleaned up backbutton listener.");
+    };
+  }, [handleBackButton]); // Dependency on the memoized handler.
 
 
   const handleNavigate = (pageId: string) => {
