@@ -306,12 +306,37 @@
 }
 
 /* Full Screen Reading Mode */
-.fullscreen-active #header {
-    transform: translateY(-100%);
-}
-.fullscreen-active #bottom-bar {
-    transform: translateY(100%);
-}
-.fullscreen-active #floating-menu {
+.quran-reader-container.fullscreen-active #header,
+.quran-reader-container.fullscreen-active #bottom-bar {
     display: none !important;
+}
+.quran-reader-container.fullscreen-active #floating-menu {
+    display: none !important;
+}
+/* Smart Notification Toast */
+#message-toast {
+    position: fixed; 
+    top: calc(4.5rem + env(safe-area-inset-top, 0px));
+    right: -400px; 
+    z-index: 1000;
+    transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 90%; 
+    font-family: var(--font-ui);
+    background-color: white;
+    color: #1f2937;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 1rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.dark #message-toast {
+    background-color: #1f2937;
+    color: white;
+    border-color: #374151;
+}
+#message-toast.show {
+    right: calc(16px + env(safe-area-inset-right, 0px));
 }
