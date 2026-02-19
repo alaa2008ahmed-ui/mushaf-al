@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface ToolbarColorPickerModalProps {
     onClose: () => void;
     onOpenModal: (modalName: string) => void;
     showToast: (msg: string) => void;
+    currentTheme: any;
+    toolbarColors: any;
 }
 
-const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClose, onOpenModal, showToast }) => {
+// FIX: Add `onOpenModal` to props destructuring to make it available in the component.
+const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClose, onOpenModal, showToast, currentTheme, toolbarColors }) => {
     const [isTransparentMode, setIsTransparentMode] = useState(() => localStorage.getItem('transparent_mode') === 'true');
     const [headerSync, setHeaderSync] = useState(false);
     const [footerSync, setFooterSync] = useState(false);
@@ -22,16 +25,38 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
         showToast(checked ? 'تم تفعيل وضع الأشرطة العائمة' : 'تم إلغاء وضع الأشرطة العائمة');
     };
 
+    const getStyleForType = useCallback((type: string) => {
+        const config = toolbarColors[type];
+        
+        let defaults = { bg: '#fff', text: '#000', border: '#ccc', font: 'inherit' };
+        
+        const headerButtons = ['surah', 'juz', 'page', 'audio'];
+        const footerButtons = ['btn-menu', 'btn-settings', 'btn-home', 'btn-bookmark', 'btn-autoscroll', 'btn-themes', 'btn-bookmarks-list', 'btn-search'];
+
+        if (type === 'top-toolbar' || type === 'bottom-toolbar') {
+            defaults = { bg: currentTheme.barBg, text: currentTheme.barText, border: currentTheme.barBorder, font: currentTheme.font };
+        } else if (headerButtons.includes(type)) {
+            defaults = { bg: currentTheme.barBg, text: currentTheme.barText, border: currentTheme.barBorder, font: currentTheme.font };
+        } else if (footerButtons.includes(type)) {
+            defaults = { bg: currentTheme.btnBg, text: currentTheme.btnText, border: currentTheme.btnBg, font: currentTheme.font };
+        }
+
+        return {
+            bg: config?.bg || defaults.bg,
+            text: config?.text || defaults.text,
+            border: config?.border || defaults.border,
+            font: config?.font || defaults.font
+        };
+    }, [currentTheme, toolbarColors]);
+
     const openEditModal = (type: string) => {
         setEditingType(type);
-        // Load existing colors if any, or defaults
-        const colors = JSON.parse(localStorage.getItem('toolbar_colors') || '{}');
-        const config = colors[type] || {};
+        const style = getStyleForType(type);
         setEditConfig({
-            bg: config.bg || '#ffffff',
-            text: config.text || '#000000',
-            border: config.border || '#cccccc',
-            font: config.font || ''
+            bg: style.bg,
+            text: style.text,
+            border: style.border,
+            font: style.font || ''
         });
     };
 
@@ -70,6 +95,17 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
     const getName = (type: string) => {
         const map: Record<string, string> = { 'top-toolbar': 'الشريط العلوى', 'bottom-toolbar': 'الشريط السفلى', 'surah': 'زر السورة', 'juz': 'زر الجزء', 'page': 'زر الصفحة', 'audio': 'زر الصوت', 'btn-settings': 'زر الإعدادات', 'btn-home': 'زر الرئيسية', 'btn-bookmark': 'زر الحفظ', 'btn-bookmarks-list': 'زر القائمة', 'btn-themes': 'زر الثيمات', 'btn-autoscroll': 'زر التمرير', 'btn-menu': 'زر القائمة الجانبية', 'btn-search': 'زر البحث', 'all': 'الكل' };
         return map[type] || type;
+    };
+
+    const renderCheckerboard = (color: string) => {
+        if (color === 'transparent' || color === 'rgba(0, 0, 0, 0)') {
+            return {
+                backgroundColor: '#ffffff',
+                backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%)',
+                backgroundSize: '8px 8px'
+            };
+        }
+        return { backgroundColor: color };
     };
 
     if (editingType) {
@@ -140,6 +176,8 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
             </div>
         );
     }
+    
+    const allButtons = ['surah', 'juz', 'page', 'audio', 'btn-menu', 'btn-settings', 'btn-home', 'btn-bookmark', 'btn-autoscroll', 'btn-themes', 'btn-bookmarks-list', 'btn-search'];
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn" onClick={onClose}>
@@ -161,15 +199,15 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                     <div className="bg-gray-100 dark:bg-gray-800/50 rounded-xl p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
                         <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 text-center border-b pb-2 border-gray-300 dark:border-gray-600">الأشرطة الرئيسية</h4>
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => openEditModal('top-toolbar')} className="color-option-btn group shadow-sm h-12 relative overflow-hidden flex items-center justify-between p-0">
-                                <span className="relative z-10 font-bold text-black text-xs px-3">الشريط العلوى</span>
-                                <div className="color-preview-dot bg-white mr-3 z-10 relative"></div>
-                                <div className="absolute top-0 left-0 w-full h-full border-b-4 border-blue-400 bg-white dark:bg-gray-700 opacity-80 group-hover:opacity-100 transition"></div>
+                            <button data-type="top-toolbar" onClick={() => openEditModal('top-toolbar')} className="color-option-btn group shadow-sm h-12 relative overflow-hidden flex items-center justify-between p-0">
+                                <span className="relative z-10 font-bold text-xs px-3" style={{ color: getStyleForType('top-toolbar').text }}>الشريط العلوى</span>
+                                <div className="color-preview-dot mr-3 z-10 relative" style={renderCheckerboard(getStyleForType('top-toolbar').bg)}></div>
+                                <div className="absolute top-0 left-0 w-full h-full border-b-4 opacity-80 group-hover:opacity-100 transition" style={{backgroundColor: getStyleForType('top-toolbar').bg, borderColor: getStyleForType('top-toolbar').border}}></div>
                             </button>
-                            <button onClick={() => openEditModal('bottom-toolbar')} className="color-option-btn group shadow-sm h-12 relative overflow-hidden flex items-center justify-between p-0">
-                                <span className="relative z-10 font-bold text-black text-xs px-3">الشريط السفلى</span>
-                                <div className="color-preview-dot bg-white mr-3 z-10 relative"></div>
-                                <div className="absolute bottom-0 left-0 w-full h-full border-t-4 border-green-400 bg-white dark:bg-gray-700 opacity-80 group-hover:opacity-100 transition"></div>
+                            <button data-type="bottom-toolbar" onClick={() => openEditModal('bottom-toolbar')} className="color-option-btn group shadow-sm h-12 relative overflow-hidden flex items-center justify-between p-0">
+                                <span className="relative z-10 font-bold text-xs px-3" style={{ color: getStyleForType('bottom-toolbar').text }}>الشريط السفلى</span>
+                                <div className="color-preview-dot mr-3 z-10 relative" style={renderCheckerboard(getStyleForType('bottom-toolbar').bg)}></div>
+                                <div className="absolute bottom-0 left-0 w-full h-full border-t-4 opacity-80 group-hover:opacity-100 transition" style={{backgroundColor: getStyleForType('bottom-toolbar').bg, borderColor: getStyleForType('bottom-toolbar').border}}></div>
                             </button>
                         </div>
                     </div>
@@ -184,10 +222,15 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => openEditModal('surah')} className="color-option-btn"><span className="text-xs font-bold text-black">سورة</span><div className="color-preview-dot"></div></button>
-                            <button onClick={() => openEditModal('juz')} className="color-option-btn"><span className="text-xs font-bold text-black">جزء</span><div className="color-preview-dot"></div></button>
-                            <button onClick={() => openEditModal('page')} className="color-option-btn"><span className="text-xs font-bold text-black">صفحة</span><div className="color-preview-dot"></div></button>
-                            <button onClick={() => openEditModal('audio')} className="color-option-btn"><span className="text-xs font-bold text-black">صوت</span><div className="color-preview-dot"></div></button>
+                            {['surah', 'juz', 'page', 'audio'].map(type => {
+                                const style = getStyleForType(type);
+                                return (
+                                    <button key={type} data-type={type} onClick={() => openEditModal(type)} className="color-option-btn" style={{backgroundColor: style.bg, borderColor: style.border}}>
+                                        <span className="text-xs font-bold" style={{color: style.text}}>{getName(type)}</span>
+                                        <div className="color-preview-dot" style={renderCheckerboard(style.bg)}></div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                     <div className="bg-gray-100 dark:bg-gray-800/50 rounded-xl p-3 border border-gray-200 dark:border-gray-700 shadow-sm relative">
@@ -201,14 +244,15 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => openEditModal('btn-menu')} className="color-option-btn"><span className="text-xs font-bold text-black">القائمة</span><div className="color-preview-dot"></div></button>
-                            <button onClick={() => openEditModal('btn-settings')} className="color-option-btn"><span className="text-xs font-bold text-black">إعدادات</span><div className="color-preview-dot"></div></button>
-                            <button onClick={() => openEditModal('btn-home')} className="color-option-btn"><span className="text-xs font-bold text-black">رئيسية</span><div className="color-preview-dot"></div></button>
-                            <button onClick={() => openEditModal('btn-bookmark')} className="color-option-btn"><span className="text-xs font-bold text-black">حفظ</span><div className="color-preview-dot"></div></button>
-                            <button onClick={() => openEditModal('btn-autoscroll')} className="color-option-btn"><span className="text-xs font-bold text-black">تمرير</span><div className="color-preview-dot"></div></button>
-                            <button onClick={() => openEditModal('btn-themes')} className="color-option-btn"><span className="text-xs font-bold text-black">ثيمات</span><div className="color-preview-dot"></div></button>
-                            <button onClick={() => openEditModal('btn-bookmarks-list')} className="color-option-btn"><span className="text-xs font-bold text-black">قائمة</span><div className="color-preview-dot"></div></button>
-                            <button onClick={() => openEditModal('btn-search')} className="color-option-btn"><span className="text-xs font-bold text-black">بحث</span><div className="color-preview-dot"></div></button>
+                             {['btn-menu', 'btn-settings', 'btn-home', 'btn-bookmark', 'btn-autoscroll', 'btn-themes', 'btn-bookmarks-list', 'btn-search'].map(type => {
+                                const style = getStyleForType(type);
+                                return (
+                                    <button key={type} data-type={type} onClick={() => openEditModal(type)} className="color-option-btn" style={{backgroundColor: style.bg, borderColor: style.border}}>
+                                        <span className="text-xs font-bold" style={{color: style.text}}>{getName(type)}</span>
+                                        <div className="color-preview-dot" style={renderCheckerboard(style.bg)}></div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                     <div className="mt-2">

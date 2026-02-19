@@ -1,8 +1,9 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import { prayerNamesAr } from '../data/prayerTimesData';
+
+declare var window: any; // Allow cordova plugins
 
 // --- Default Tones Configuration ---
 const defaultTones = [
@@ -53,10 +54,21 @@ const formatTime12_clean = (time) => {
     return `${h}:${m.toString().padStart(2, '0')} ${ap}`;
 }
 
+const getMediaURL = (s) => {
+    if (!s) return '';
+    if (s.startsWith('data:')) {
+        return s; // Data URLs are absolute
+    }
+    if (window.cordova && window.cordova.platformId === 'android') {
+        return "/android_asset/www/" + s;
+    }
+    return s;
+};
+
 const playNotificationSound = (source) => {
     if (!source) return;
     try {
-        const audio = new Audio(source);
+        const audio = new Audio(getMediaURL(source));
         audio.play().catch(e => console.error("Audio play failed:", e));
     } catch (e) {
         console.error("Failed to play notification sound:", e);
@@ -99,6 +111,97 @@ function PrayerTimes({ onBack }) {
     const [searchInput, setSearchInput] = useState("");
     const countdownRef = useRef(null);
     const searchIconRef = useRef(null);
+    const [toastMessage, setToastMessage] = useState('');
+    
+    useEffect(() => {
+        if (toastMessage) {
+            const timer = setTimeout(() => setToastMessage(''), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toastMessage]);
+    
+    const showToast = useCallback((msg) => setToastMessage(msg), []);
+
+    const scheduleAllNotifications = useCallback(() => {
+        if (window.cordova && window.cordova.plugins && window.cordova.plugins.notification && window.cordova.plugins.notification.local) {
+            
+            const localNotifier = window.cordova.plugins.notification.local;
+
+            localNotifier.cancelAll(() => {
+                console.log("Cleared all previous notifications.");
+
+                const prayerKeys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+                const notificationsToSchedule: any[] = [];
+
+                prayerKeys.forEach((key, index) => {
+                    if (!config.mutedPrayers[key] && times[key]) {
+                        const baseTime = applyOffset(times[key], config.prayerOffsets[key]);
+                        if (!baseTime || baseTime.includes('--')) return;
+
+                        const [h, m] = baseTime.split(':');
+                        let prayerDate = new Date();
+                        prayerDate.setHours(parseInt(h), parseInt(m), 0, 0);
+                        
+                        if (prayerDate < new Date()) {
+                            prayerDate.setDate(prayerDate.getDate() + 1);
+                        }
+                        
+                        const toneConfig = config.tones[key];
+                        let soundPath = defaultTones[0].path; 
+
+                        if (toneConfig && toneConfig.data && !toneConfig.data.startsWith('data:')) {
+                            soundPath = toneConfig.data;
+                        }
+                        
+                        notificationsToSchedule.push({
+                            id: index + 1,
+                            title: `حان الآن موعد أذان ${prayerNamesAr[key]}`,
+                            text: 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"',
+                            trigger: { at: prayerDate },
+                            sound: 'file://' + soundPath,
+                            foreground: true,
+                        });
+                    }
+                });
+
+                if (notificationsToSchedule.length > 0) {
+                    localNotifier.schedule(notificationsToSchedule, () => {
+                        console.log(`Scheduled ${notificationsToSchedule.length} prayer notifications.`);
+                        showToast(`تم جدولة ${notificationsToSchedule.length} من تنبيهات الصلاة.`);
+                    });
+                }
+            });
+        }
+    }, [times, config, showToast]);
+    
+    useEffect(() => {
+        const onDeviceReady = () => {
+            if (Object.keys(times).length > 0) {
+                if (window.cordova && window.cordova.plugins && window.cordova.plugins.notification.local) {
+                    const localNotifier = window.cordova.plugins.notification.local;
+                    localNotifier.hasPermission((granted) => {
+                        if (granted) {
+                            scheduleAllNotifications();
+                        } else {
+                            localNotifier.requestPermission((granted) => {
+                                if (granted) {
+                                    scheduleAllNotifications();
+                                } else {
+                                    showToast("تم رفض إذن الإشعارات. لن تعمل التنبيهات.");
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        };
+
+        document.addEventListener('deviceready', onDeviceReady, false);
+        return () => {
+            document.removeEventListener('deviceready', onDeviceReady, false);
+        };
+    }, [times, config, scheduleAllNotifications]);
+
 
     const updateAllData = (prayerData, locationData) => {
         setTimes(prayerData.timings);
@@ -192,7 +295,11 @@ function PrayerTimes({ onBack }) {
     }
 
     useEffect(() => {
-        if ("Notification" in window) Notification.requestPermission();
+        const onDeviceReady = () => {
+            if ("Notification" in window) Notification.requestPermission();
+        };
+        document.addEventListener('deviceready', onDeviceReady, false);
+        
         const cached = localStorage.getItem('grandPrayersCache');
         if (cached) {
             try {
@@ -203,6 +310,8 @@ function PrayerTimes({ onBack }) {
             }
         }
         refreshLocation();
+
+        return () => document.removeEventListener('deviceready', onDeviceReady, false);
     }, []);
 
     useEffect(() => {
@@ -263,9 +372,7 @@ function PrayerTimes({ onBack }) {
                 setCountdown(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
             } else {
                 setCountdown("00:00:00");
-                if (!config.mutedPrayers[nextPrayer.key]) {
-                    playNotificationSound(config.tones[nextPrayer.key]?.data);
-                }
+                // The native notification will handle the sound now. We just update the UI.
                 setNextPrayer(findNext());
             }
         }, 1000);
@@ -341,7 +448,7 @@ function PrayerTimes({ onBack }) {
         const currentTone = config.tones[currentEditingKey];
         let selectValue = 'none';
         if (currentTone) {
-            if (currentTone.data.startsWith('data:audio')) {
+            if (currentTone.data.startsWith('data:')) {
                 selectValue = 'custom';
             } else {
                 selectValue = currentTone.data;
@@ -491,6 +598,11 @@ function PrayerTimes({ onBack }) {
                         </div>
                         <button onClick={saveUserConfig} className="w-full mt-8 text-white py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all" style={{backgroundColor: theme.palette[0]}}>حفظ التغييرات</button>
                     </div>
+                </div>
+            )}
+            {toastMessage && (
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-[100]">
+                    {toastMessage}
                 </div>
             )}
             <BottomBar onHomeClick={onBack} onThemesClick={() => {}} showThemes={false} />

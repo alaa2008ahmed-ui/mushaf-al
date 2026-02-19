@@ -17,9 +17,7 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast }) => {
         localStorage.setItem('current_theme_id', themeId);
         
         // Handle Transparency
-        if (theme.isGlass) {
-            localStorage.setItem('transparent_mode', 'true');
-        }
+        // FIX: Removed check for `theme.isGlass` as the property does not exist on the theme objects.
         
         // Generate Theme Colors
         let themeColors = {};

@@ -16,19 +16,25 @@ import QuranReader from './pages/QuranReader'; // استيراد المكون ا
 
 // --- Main App Component ---
 function App() {
-  const [page, setPage] = useState('home');
+  const [history, setHistory] = useState(['home']);
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
 
+  const page = history[history.length - 1];
+
   // Refs to hold current state, preventing stale closures in event listeners.
-  const pageRef = useRef(page);
+  const historyRef = useRef(history);
   useEffect(() => {
-    pageRef.current = page;
-  }, [page]);
+    historyRef.current = history;
+  }, [history]);
 
   const isThemeSelectorOpenRef = useRef(isThemeSelectorOpen);
   useEffect(() => {
     isThemeSelectorOpenRef.current = isThemeSelectorOpen;
   }, [isThemeSelectorOpen]);
+
+  const navigateBack = useCallback(() => {
+    setHistory(prev => (prev.length > 1 ? prev.slice(0, -1) : prev));
+  }, []);
 
   // Memoized handler for the back button press for stability.
   const handleBackButton = useCallback((event: Event) => {
@@ -41,15 +47,15 @@ function App() {
       return;
     }
 
-    if (pageRef.current !== 'home') {
-      // If we are on any page other than home, go back to the home screen.
-      setPage('home');
+    if (historyRef.current.length > 1) {
+      // If we are on any page other than home, go back one step in history.
+      navigateBack();
     } else {
       // If we are on the home page, show an exit confirmation dialog.
       const appNavigator = window.navigator as any;
       if (appNavigator.notification && typeof appNavigator.notification.confirm === 'function') {
         appNavigator.notification.confirm(
-          'هل تريد الخروج من تطبيق احمد وليلى؟', // message
+          'هل تريد الخروج من مصحف احمد وليلى؟', // message
           (buttonIndex) => {
             // In Cordova, buttonIndex is 1-based. 'نعم' is the first button.
             if (buttonIndex === 1) {
@@ -63,14 +69,14 @@ function App() {
         );
       } else {
         // Fallback for browsers or environments without the dialog plugin.
-        if (window.confirm('هل تريد الخروج من تطبيق احمد وليلى؟')) {
+        if (window.confirm('هل تريد الخروج من مصحف احمد وليلى؟')) {
           if (appNavigator.app && typeof appNavigator.app.exitApp === 'function') {
             appNavigator.app.exitApp();
           }
         }
       }
     }
-  }, []); // This callback is memoized and doesn't need dependencies due to using refs.
+  }, [navigateBack]);
 
   // Effect to set up device-specific features and event listeners ONCE.
   useEffect(() => {
@@ -103,33 +109,25 @@ function App() {
       document.removeEventListener('deviceready', onDeviceReady, false);
       document.removeEventListener('backbutton', handleBackButton, false);
       console.log("Cleaned up deviceready and backbutton listeners.");
+      const win = window as any;
+      if (win.plugins && win.plugins.insomnia && win.plugins.insomnia.allowSleepAgain) {
+        win.plugins.insomnia.allowSleepAgain();
+      }
     };
   }, [handleBackButton]); // Dependency ensures the correct handler is always attached.
 
 
-  const handleNavigate = (pageId) => {
-    if (pageId === 'quran') { // إضافة حالة التنقل إلى المصحف
-        setPage('quran');
-    } else if (pageId === 'salah-adhkar') {
-        setPage('salah-adhkar');
-    } else if (pageId === 'calendar') {
-        setPage('calendar');
-    } else if (pageId === 'listen') {
-        setPage('listen');
-    } else if (pageId === 'tasbeeh') {
-        setPage('tasbeeh');
-    } else if (pageId === 'hajj-umrah') {
-        setPage('hajj-umrah');
-    } else if (pageId === 'hisn-muslim') {
-        setPage('hisn-muslim');
-    } else if (pageId === 'prayer-times') {
-        setPage('prayer-times');
-    } else if (pageId === 'qibla') {
-        setPage('qibla');
-    } else if (pageId === 'sabah-masaa') {
-        setPage('sabah-masaa');
-    } else if (pageId === 'adia') {
-        setPage('adia');
+  const handleNavigate = (pageId: string) => {
+    const validPages = [
+        'quran', 'salah-adhkar', 'calendar', 'listen', 'tasbeeh', 
+        'hajj-umrah', 'hisn-muslim', 'prayer-times', 'qibla', 
+        'sabah-masaa', 'adia'
+    ];
+
+    if (validPages.includes(pageId)) {
+        if (history[history.length - 1] !== pageId) {
+            setHistory(prev => [...prev, pageId]);
+        }
     } else {
         alert(`التنقل إلى قسم "${pageId}" قيد الإنشاء.`);
     }
@@ -141,27 +139,27 @@ function App() {
   const renderPage = () => {
     switch(page) {
       case 'quran': // إضافة حالة عرض مكون المصحف
-        return <QuranReader onBack={() => setPage('home')} />;
+        return <QuranReader onBack={navigateBack} />;
       case 'salah-adhkar':
-        return <AthkarAlSalah onBack={() => setPage('home')} />;
+        return <AthkarAlSalah onBack={navigateBack} />;
       case 'calendar':
-        return <HijriCalendar onBack={() => setPage('home')} />;
+        return <HijriCalendar onBack={navigateBack} />;
       case 'listen':
-        return <ListenQuran onBack={() => setPage('home')} />;
+        return <ListenQuran onBack={navigateBack} />;
       case 'tasbeeh':
-        return <Tasbeeh onBack={() => setPage('home')} />;
+        return <Tasbeeh onBack={navigateBack} />;
       case 'hajj-umrah':
-        return <HajjUmrah onBack={() => setPage('home')} />;
+        return <HajjUmrah onBack={navigateBack} />;
       case 'hisn-muslim':
-        return <HisnAlmuslim onBack={() => setPage('home')} />;
+        return <HisnAlmuslim onBack={navigateBack} />;
       case 'prayer-times':
-        return <PrayerTimes onBack={() => setPage('home')} />;
+        return <PrayerTimes onBack={navigateBack} />;
       case 'qibla':
-        return <Qibla onBack={() => setPage('home')} />;
+        return <Qibla onBack={navigateBack} />;
       case 'sabah-masaa':
-        return <AdkarSabahMasaa onBack={() => setPage('home')} />;
+        return <AdkarSabahMasaa onBack={navigateBack} />;
       case 'adia':
-        return <Adia onBack={() => setPage('home')} />;
+        return <Adia onBack={navigateBack} />;
       case 'home':
       default:
         return <MainMenu onNavigate={handleNavigate} onOpenThemes={toggleThemeSelector} />;

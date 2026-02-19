@@ -29,7 +29,8 @@ function hexToRgb(hex: string | null) {
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
 }
 
-export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+// FIX: Made `children` prop optional to resolve "Property 'children' is missing" error.
+export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     const [settings, setSettings] = useState<ThemeSettings>(() => {
         try {
             const saved = localStorage.getItem(THEME_SETTINGS_KEY);

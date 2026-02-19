@@ -6,6 +6,7 @@ interface MushafPageProps {
     pageData: any[];
     highlightedAyahId: string | null;
     onAyahClick: (surah: number, ayah: number) => void;
+    onVerseClick: (surah: number, ayah: number, event: React.MouseEvent) => void;
     onSajdahVisible: (surah: string, ayah: number) => void;
     settings?: {
         fontSize: number;
@@ -15,7 +16,7 @@ interface MushafPageProps {
     };
 }
 
-const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, highlightedAyahId, onAyahClick, onSajdahVisible, settings }) => {
+const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, highlightedAyahId, onAyahClick, onVerseClick, onSajdahVisible, settings }) => {
     const observerRef = useRef<IntersectionObserver | null>(null);
     const pageRef = useRef<HTMLDivElement | null>(null);
 
@@ -91,7 +92,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                                 data-ayah={ayah.numberInSurah}
                             >
                                 {text}
-                                <span className="verse-container">
+                                <span className="verse-container" onClick={(e) => onVerseClick(ayah.sNum, ayah.numberInSurah, e)}>
                                     <span className="verse-bracket">﴿</span>
                                     <span className="verse-num-inner">{toArabic(ayah.numberInSurah)}</span>
                                     <span className="verse-bracket">﴾</span>

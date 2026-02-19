@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, FC } from 'react';
 import './QuranReader.css'; 
-import { JUZ_MAP, toArabic, THEMES } from '../components/QuranReader/constants';
+import { JUZ_MAP, toArabic, THEMES, TAFSEERS } from '../components/QuranReader/constants';
 import SearchModal from '../components/QuranReader/SearchModal';
 import ThemesModal from '../components/QuranReader/ThemesModal';
 import SettingsModal from '../components/QuranReader/SettingsModal';
@@ -10,6 +10,7 @@ import SurahJuzModal from '../components/QuranReader/SurahJuzModal';
 import BookmarksModal from '../components/QuranReader/BookmarksModal';
 import MushafPage from '../components/QuranReader/MushafPage';
 import Toast from '../components/QuranReader/Toast';
+import TafseerModal from '../components/QuranReader/TafseerModal';
 
 // --- Main Component ---
 interface QuranReaderProps {
@@ -35,6 +36,17 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
     const [sajdahInfo, setSajdahInfo] = useState<{ show: boolean; surah?: string; ayah?: number }>({ show: false });
     const [autoScrollState, setAutoScrollState] = useState({ isActive: false, isPaused: false, elapsedTime: 0 });
     const [hideUIOnScroll, setHideUIOnScroll] = useState(() => localStorage.getItem('hide_ui_on_scroll') === 'true');
+
+    // Audio State
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isAudioLoading, setIsAudioLoading] = useState(false);
+    const [playingAyah, setPlayingAyah] = useState<{s: number; a: number} | null>(null);
+    
+    // Tafseer State
+    const [tafseerInfo, setTafseerInfo] = useState({ isOpen: false, s: 0, a: 0, text: '', surahName: '' });
+    const [isTafseerLoading, setIsTafseerLoading] = useState(false);
+    const tafseerCache = useRef<any>({});
+
 
     // Settings & Theme State
     const [settings, setSettings] = useState(() => {
@@ -70,27 +82,185 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
     const scrollAccumulatorRef = useRef(0);
     const autoScrollPausedRef = useRef(false);
     const currentAyahRef = useRef(currentAyah);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         currentAyahRef.current = currentAyah;
     }, [currentAyah]);
     
-    const showToast = (message: string) => {
+    const showToast = useCallback((message: string) => {
         setToast({ show: true, message });
-    };
+    }, []);
 
     const showSajdahNotification = useCallback((surah, ayah) => {
         setSajdahInfo({ show: true, surah, ayah });
         setTimeout(() => setSajdahInfo({ show: false }), 4000);
     }, []);
 
+    const stopAudio = useCallback(() => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            // Setting src to '' is a standard way to stop network requests and reset the element.
+            audioRef.current.src = '';
+        }
+        setIsPlaying(false);
+        setIsAudioLoading(false);
+        setPlayingAyah(null);
+    }, []);
+
     const closeModal = useCallback((modalName: string) => {
         setActiveModals(p => ({ ...p, [modalName]: false }));
     }, []);
 
+    const playAudio = useCallback((s: number, a: number) => {
+        if (!audioRef.current) return;
+        
+        setIsAudioLoading(true);
+        const surahStr = String(s).padStart(3, '0');
+        const ayahStr = String(a).padStart(3, '0');
+        const audioUrl = `https://everyayah.com/data/${settings.reader}/${surahStr}${ayahStr}.mp3`;
+        
+        audioRef.current.src = audioUrl;
+        const playPromise = audioRef.current.play();
+    
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            if (error.name === 'AbortError') {
+              console.log("Audio playback interrupted. This is an expected behavior.");
+              return;
+            }
+            
+            showToast('فشل تشغيل الصوت.');
+            console.error("Audio play failed:", error);
+            stopAudio();
+          });
+        }
+    }, [settings.reader, showToast, stopAudio]);
+
     const openModal = useCallback((modalName: string) => {
+        stopAudio();
         setActiveModals(p => ({...p, [modalName]: true}));
-    }, []);
+    }, [stopAudio]);
+
+    const playNextAyah = useCallback(() => {
+        if (!quranData || !playingAyah) return stopAudio();
+    
+        const { s, a } = playingAyah;
+        const surah = quranData.surahs[s - 1];
+        if (!surah) return stopAudio();
+    
+        if (a < surah.ayahs.length) {
+            const nextAyah = { s, a: a + 1 };
+            setPlayingAyah(nextAyah);
+            setCurrentAyah(nextAyah);
+            setHighlightedAyahId(`ayah-${s}-${a + 1}`);
+            
+            document.getElementById(`ayah-${s}-${a + 1}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            playAudio(s, a + 1);
+        } else {
+            stopAudio();
+            showToast('انتهت السورة');
+        }
+    }, [quranData, playingAyah, stopAudio, playAudio]);
+    
+    const handleVerseClick = useCallback((s: number, a: number, event: React.MouseEvent) => {
+        event.stopPropagation();
+        if (!quranData) return;
+        const surah = quranData.surahs.find((su: any) => su.number === s);
+        if (surah) {
+            setIsTafseerLoading(true);
+            setTafseerInfo({ isOpen: true, s, a, text: '', surahName: surah.name });
+        }
+    }, [quranData]);
+    
+    useEffect(() => {
+        const fetchTafseer = async () => {
+            if (!tafseerInfo.isOpen) return;
+
+            const currentTafseerId = settings.tafseer || 'ar.muyassar';
+            const cacheKey = `${tafseerInfo.s}_${currentTafseerId}`;
+
+            try {
+                if (!tafseerCache.current[cacheKey]) {
+                    const res = await fetch(`https://api.alquran.cloud/v1/surah/${tafseerInfo.s}/${currentTafseerId}`);
+                    const data = await res.json();
+                    if (data.code === 200) {
+                        tafseerCache.current[cacheKey] = data.data.ayahs;
+                    } else {
+                        throw new Error('Failed to fetch tafseer data');
+                    }
+                }
+
+                const surahTafseer = tafseerCache.current[cacheKey];
+                const ayahTafseer = surahTafseer?.[tafseerInfo.a - 1];
+                setTafseerInfo(prev => ({ ...prev, text: ayahTafseer?.text || "التفسير غير متوفر لهذه الآية." }));
+
+            } catch (e) {
+                console.error("Tafseer fetch failed:", e);
+                setTafseerInfo(prev => ({...prev, text: 'خطأ في تحميل التفسير. يرجى التحقق من اتصالك بالإنترنت.'}));
+            } finally {
+                setIsTafseerLoading(false);
+            }
+        };
+
+        fetchTafseer();
+    }, [tafseerInfo.isOpen, tafseerInfo.s, tafseerInfo.a, settings.tafseer]);
+
+
+    useEffect(() => {
+        audioRef.current = new Audio();
+        const audio = audioRef.current;
+
+        const onPlay = () => { setIsPlaying(true); setIsAudioLoading(false); };
+        const onPause = () => setIsPlaying(false);
+        const onWaiting = () => setIsAudioLoading(true);
+        const onPlaying = () => setIsAudioLoading(false);
+        const onEnded = () => {
+            setIsPlaying(false);
+            playNextAyah();
+        };
+        const onError = () => {
+            if (audioRef.current?.error?.code !== 20) { // MEDIA_ERR_ABORTED
+                setIsAudioLoading(false);
+                setIsPlaying(false);
+                showToast('خطأ في تحميل المقطع الصوتي.');
+            }
+        };
+        
+        audio.addEventListener('play', onPlay);
+        audio.addEventListener('playing', onPlaying);
+        audio.addEventListener('pause', onPause);
+        audio.addEventListener('waiting', onWaiting);
+        audio.addEventListener('ended', onEnded);
+        audio.addEventListener('error', onError);
+
+        return () => {
+            audio.pause();
+            audio.removeEventListener('play', onPlay);
+            audio.removeEventListener('playing', onPlaying);
+            audio.removeEventListener('pause', onPause);
+            audio.removeEventListener('waiting', onWaiting);
+            audio.removeEventListener('ended', onEnded);
+            audio.removeEventListener('error', onError);
+        };
+    }, [playNextAyah, showToast]);
+
+    const toggleAudio = useCallback(() => {
+        if (isPlaying || isAudioLoading) {
+            stopAudio();
+        } else {
+            if (currentAyah) {
+                setPlayingAyah(currentAyah);
+                playAudio(currentAyah.s, currentAyah.a);
+                const ayahId = `ayah-${currentAyah.s}-${currentAyah.a}`;
+                setHighlightedAyahId(ayahId);
+                document.getElementById(ayahId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                showToast('الرجاء اختيار آية للبدء');
+            }
+        }
+    }, [isPlaying, isAudioLoading, currentAyah, playAudio, stopAudio]);
 
     // Theme & Settings Event Listeners
     useEffect(() => {
@@ -99,7 +269,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
             const newTheme = THEMES[themeId as keyof typeof THEMES] || THEMES['default'];
             setCurrentTheme(newTheme);
             
-            // Update settings based on theme
             const savedSettings = localStorage.getItem('quran_settings');
             let currentSettings = savedSettings ? JSON.parse(savedSettings) : settings;
             
@@ -108,7 +277,7 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
                 bgColor: newTheme.bg,
                 textColor: newTheme.text,
                 fontFamily: newTheme.font,
-                theme: 'light' // Reset to light unless explicitly dark theme logic used
+                theme: 'light'
             };
             
             setSettings(updatedSettings);
@@ -134,7 +303,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
         };
     }, []);
 
-    // Apply CSS Variables
     useEffect(() => {
         const root = document.documentElement;
         root.style.setProperty('--color-sajdah', currentTheme.sajdah);
@@ -150,7 +318,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
     }, [currentTheme, settings.theme]);
 
     useEffect(() => {
-        // Data loading logic...
         const loadQuranData = async () => {
              try {
                 const local = localStorage.getItem('quran_data');
@@ -188,7 +355,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
         }
     }, [activeModals['bookmarks-modal']]);
 
-    // Dynamic Page Loading on Scroll
     useEffect(() => {
         const contentEl = mushafContentRef.current;
         if (!contentEl) return;
@@ -218,8 +384,30 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
     }, [visiblePages]);
 
     const getPageData = useCallback((pageNum) => quranData ? quranData.surahs.flatMap(s => s.ayahs.filter(a => a.page === pageNum).map(a => ({ ...a, sNum: s.number, sName: s.name }))) : [], [quranData]);
-    const handleAyahClick = useCallback((s, a) => { setHighlightedAyahId(`ayah-${s}-${a}`); setCurrentAyah({ s, a }); localStorage.setItem('last_pos', JSON.stringify({ s, a })); }, []);
-    const jumpToAyah = useCallback((s, a, instant = false) => { if (!quranData) return; const surah = quranData.surahs.find(su => su.number === s); const ayah = surah?.ayahs.find(ay => ay.numberInSurah === a); if (!ayah) return; const p = ayah.page; setVisiblePages([p, p + 1, p + 2, p - 1, p - 2].filter(n => n > 0 && n <= 604).sort((a,b) => a-b)); setTimeout(() => { const el = document.getElementById(`ayah-${s}-${a}`); if (el) { el.scrollIntoView({ block: 'center', behavior: instant ? 'auto' : 'smooth' }); handleAyahClick(s, a); } else { handleAyahClick(s, a); } }, 100); setActiveModals({}); }, [quranData, handleAyahClick]);
+    const handleAyahClick = useCallback((s, a) => {
+        setHighlightedAyahId(`ayah-${s}-${a}`);
+        setCurrentAyah({ s, a });
+        localStorage.setItem('last_pos', JSON.stringify({ s, a }));
+    }, []);
+    const jumpToAyah = useCallback((s, a, instant = false) => {
+        stopAudio();
+        if (!quranData) return;
+        const surah = quranData.surahs.find(su => su.number === s);
+        const ayah = surah?.ayahs.find(ay => ay.numberInSurah === a);
+        if (!ayah) return;
+        const p = Number(ayah.page);
+        setVisiblePages([...new Set([p, p + 1, p + 2, p - 1, p - 2])].filter(n => n > 0 && n <= 604).sort((a,b) => a-b));
+        setTimeout(() => {
+            const el = document.getElementById(`ayah-${s}-${a}`);
+            if (el) {
+                el.scrollIntoView({ block: 'center', behavior: instant ? 'auto' : 'smooth' });
+                handleAyahClick(s, a);
+            } else {
+                handleAyahClick(s, a);
+            }
+        }, 100);
+        setActiveModals({});
+    }, [quranData, handleAyahClick, stopAudio]);
     const saveBookmark = () => { if (!currentAyah) { showToast('اختر آية أولاً'); return; } const storedBookmarks = JSON.parse(localStorage.getItem('quran_bookmarks_list') || '[]'); const date = new Date(); const newBookmark = { id: Date.now(), s: currentAyah.s, a: currentAyah.a, date: date.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' }), time: date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) }; const newBookmarks = [newBookmark, ...storedBookmarks]; localStorage.setItem('quran_bookmarks_list', JSON.stringify(newBookmarks)); setBookmarks(newBookmarks); showToast('تم حفظ الإشارة المرجعية'); };
     const deleteBookmark = (id) => { const newBookmarks = bookmarks.filter(b => b.id !== id); localStorage.setItem('quran_bookmarks_list', JSON.stringify(newBookmarks)); setBookmarks(newBookmarks); };
 
@@ -245,10 +433,8 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
                 const s = parseInt(parts[1]); 
                 const a = parseInt(parts[2]);
                 
-                // Avoid state update if same ayah
                 if (s !== currentAyahRef.current.s || a !== currentAyahRef.current.a) {
                     setCurrentAyah({ s, a });
-                    // No need to update ref here as useEffect handles it, but for immediate consistency in this loop:
                     currentAyahRef.current = { s, a };
                 }
             }
@@ -276,10 +462,10 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
         scrollAccumulatorRef.current = 0;
         autoScrollPausedRef.current = false;
 
-        const minutesPerJuz = parseInt(settings.scrollMinutes, 10) || 20;
+        // FIX: Ensure settings.scrollMinutes is treated as a string for parseInt, which prevents a TypeScript error in strict mode where a number cannot be passed to parseInt.
+        const minutesPerJuz = parseInt(String(settings.scrollMinutes), 10) || 20;
         const tickRate = 20;
         
-        // Calculate page height
         const content = mushafContentRef.current;
         const pages = content.querySelectorAll('.mushaf-page');
         let totalHeight = 0;
@@ -306,7 +492,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
                 mushafContentRef.current.scrollTop += pixelsToMove;
                 scrollAccumulatorRef.current -= pixelsToMove;
                 
-                // Update headers logic (throttled)
                 updateHeadersDuringAutoScroll();
             }
         }, tickRate);
@@ -333,19 +518,18 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
         setAutoScrollState(p => ({...p, isPaused: newPausedState }));
       }
     };
-     // --- End Auto-scroll Logic ---
 
-     // Helper to get style for toolbar buttons
      const getToolbarStyle = (type: string, defaultBg: string, defaultText: string, defaultBorder: string) => {
          const config = toolbarColors[type];
          
-         // Special handling for transparent mode on toolbars
          if (isTransparentMode && (type === 'top-toolbar' || type === 'bottom-toolbar')) {
              return {
                  backgroundColor: 'transparent',
                  color: config?.text || defaultText,
                  borderColor: 'transparent',
                  boxShadow: 'none',
+                 backdropFilter: 'none',
+                 WebkitBackdropFilter: 'none',
                  position: 'fixed' as 'fixed',
                  left: 0,
                  right: 0,
@@ -369,11 +553,22 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
          };
      };
 
-     if (isLoading) { /* ... loading component ... */ return <div id="loader" className="fixed inset-0 bg-[#1f2937] text-white z-[9999] flex flex-col items-center justify-center"><div className="text-2xl font-bold mb-4">جاري تحميل المصحف...</div><div className="w-64 h-2 bg-gray-700 rounded-full overflow-hidden"><div id="progress-bar" className="h-full bg-green-500 transition-all duration-300" style={{width: `${loadingProgress}%`}}></div></div><div id="loader-status" className="mt-2 text-sm text-gray-400">{loadingStatus}</div></div> }
+     if (isLoading) { return <div id="loader" className="fixed inset-0 bg-[#1f2937] text-white z-[9999] flex flex-col items-center justify-center"><div className="text-2xl font-bold mb-4">جاري تحميل المصحف...</div><div className="w-64 h-2 bg-gray-700 rounded-full overflow-hidden"><div id="progress-bar" className="h-full bg-green-500 transition-all duration-300" style={{width: `${loadingProgress}%`}}></div></div><div id="loader-status" className="mt-2 text-sm text-gray-400">{loadingStatus}</div></div> }
     
     const surahName = quranData?.surahs[currentAyah.s - 1]?.name.replace('سورة', '').trim() || '';
     const juz = JUZ_MAP.slice().reverse().find(j => (currentAyah.s > j.s) || (currentAyah.s === j.s && currentAyah.a >= j.a))?.j || 1;
     const page = quranData?.surahs[currentAyah.s - 1]?.ayahs.find(ay => ay.numberInSurah === currentAyah.a)?.page || 1;
+    const tafseerName = TAFSEERS.find(t => t.id === settings.tafseer)?.name || 'التفسير';
+
+    const renderPlayButtonIcon = () => {
+        if (isAudioLoading) {
+            return <span className="text-emerald-500 font-bold animate-pulse text-xs">جاري..</span>;
+        }
+        if (isPlaying) {
+            return <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>;
+        }
+        return <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>;
+    };
 
     return (
         <div 
@@ -396,7 +591,9 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
                 <button id="surah-name-header" onClick={() => openModal('surah-modal')} className="top-bar-text-button" style={getToolbarStyle('surah', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}><span>{surahName} - آية {toArabic(currentAyah.a)}</span></button>
                 <button id="juz-number-header" onClick={() => openModal('juz-modal')} className="top-bar-text-button" style={getToolbarStyle('juz', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>الجزء {toArabic(juz)}</button>
                 <button id="header-page" className="top-bar-text-button cursor-default" style={getToolbarStyle('page', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>ص {toArabic(page)}</button>
-                <button id="btn-play" className="top-bar-text-button" style={getToolbarStyle('audio', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}><span id="play-icon-svg"><svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></button>
+                <button id="btn-play" onClick={toggleAudio} className="top-bar-text-button" style={getToolbarStyle('audio', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>
+                    <span id="play-icon-svg">{renderPlayButtonIcon()}</span>
+                </button>
             </header>
 
             <ReadingTimer isVisible={autoScrollState.isPaused || (!autoScrollState.isActive && autoScrollState.elapsedTime > 0)} elapsedTime={autoScrollState.elapsedTime} />
@@ -410,7 +607,7 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
             >
                 <div id="pages-container" className="full-mushaf-container">
                    {[...new Set(visiblePages)].sort((a,b) => a-b).map(pageNum => (
-                        <MushafPage key={pageNum} pageNum={pageNum} pageData={getPageData(pageNum)} highlightedAyahId={highlightedAyahId} onAyahClick={handleAyahClick} onSajdahVisible={showSajdahNotification} settings={settings} />
+                        <MushafPage key={pageNum} pageNum={pageNum} pageData={getPageData(pageNum)} highlightedAyahId={highlightedAyahId} onAyahClick={handleAyahClick} onVerseClick={handleVerseClick} onSajdahVisible={showSajdahNotification} settings={settings} />
                    ))}
                 </div>
             </div>
@@ -441,14 +638,23 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
             
             {/* --- Modals --- */}
             {activeModals['surah-modal'] && <SurahJuzModal type="surah" quranData={quranData} onSelect={(s, a) => jumpToAyah(s, a)} onClose={() => closeModal('surah-modal')} />}
-            {activeModals['juz-modal'] && <SurahJuzModal type="juz" quranData={quranData} onSelect={(j) => jumpToAyah(JUZ_MAP[j-1].s, JUZ_MAP[j-1].a)} onClose={() => closeModal('juz-modal')} />}
+            {/* FIX: Correctly handle 'juz' selection. The 'onSelect' prop for the Juz modal should be typed to accept a number, and the logic should correctly calculate the array index (j-1). */}
+            {activeModals['juz-modal'] && <SurahJuzModal type="juz" quranData={quranData} onSelect={(j: number) => jumpToAyah(JUZ_MAP[j - 1].s, JUZ_MAP[j - 1].a)} onClose={() => closeModal('juz-modal')} />}
             {activeModals['bookmarks-modal'] && <BookmarksModal bookmarks={bookmarks} quranData={quranData} onSelect={(s,a) => jumpToAyah(s,a)} onDelete={deleteBookmark} onClose={() => closeModal('bookmarks-modal')} />}
             {activeModals['search-modal'] && <SearchModal quranData={quranData} onSelect={(s,a) => jumpToAyah(s,a)} onClose={() => closeModal('search-modal')} />}
             {activeModals['themes-modal'] && <ThemesModal onClose={() => closeModal('themes-modal')} showToast={showToast} />}
             {activeModals['settings-modal'] && <SettingsModal onClose={() => closeModal('settings-modal')} onOpenModal={openModal} showToast={showToast} />}
-            {activeModals['toolbar-color-picker-modal'] && <ToolbarColorPickerModal onClose={() => closeModal('toolbar-color-picker-modal')} onOpenModal={openModal} showToast={showToast} />}
+            {activeModals['toolbar-color-picker-modal'] && <ToolbarColorPickerModal onClose={() => closeModal('toolbar-color-picker-modal')} onOpenModal={openModal} showToast={showToast} currentTheme={currentTheme} toolbarColors={toolbarColors} />}
             {activeModals['quran-download-modal'] && <QuranDownloadModal onClose={() => closeModal('quran-download-modal')} quranData={quranData} showToast={showToast} />}
             {activeModals['tafsir-download-modal'] && <TafsirDownloadModal onClose={() => closeModal('tafsir-download-modal')} quranData={quranData} showToast={showToast} />}
+            
+            <TafseerModal
+                isOpen={tafseerInfo.isOpen}
+                isLoading={isTafseerLoading}
+                title={`${tafseerName} - ${tafseerInfo.surahName.replace('سورة','').trim()} - آية ${toArabic(tafseerInfo.a)}`}
+                text={tafseerInfo.text}
+                onClose={() => setTafseerInfo(p => ({ ...p, isOpen: false }))}
+            />
 
             <Toast message={toast.message} show={toast.show} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
         </div>
@@ -456,8 +662,8 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
 };
 
 const ReadingTimer: FC<{isVisible: boolean, elapsedTime: number}> = ({isVisible, elapsedTime}) => {
-    const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
-    const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+    const minutes = Math.floor(Number(elapsedTime) / 60).toString().padStart(2, '0');
+    const seconds = (Number(elapsedTime) % 60).toString().padStart(2, '0');
     return (
         <div className={`reading-timer ${isVisible ? 'show' : ''}`}>
             {toArabic(`${minutes}:${seconds}`)}
@@ -465,12 +671,12 @@ const ReadingTimer: FC<{isVisible: boolean, elapsedTime: number}> = ({isVisible,
     );
 };
 
-const SajdahNotification: FC<{isVisible: boolean, surah: string, ayah: number}> = ({isVisible, surah, ayah}) => (
+const SajdahNotification: FC<{isVisible: boolean, surah?: string, ayah?: number}> = ({isVisible, surah, ayah}) => (
     <div className={`sajdah-notification ${isVisible ? 'show' : ''}`}>
         <div className="p-2 rounded-full"><i className="fa-solid fa-mosque"></i></div>
         <div>
             <div className="font-bold text-sm">سجدة تلاوة</div>
-            <div className="text-xs mt-0.5">سورة {surah} - آية {toArabic(ayah)}</div>
+            <div className="text-xs mt-0.5">سورة {surah} - آية {toArabic(ayah || '')}</div>
         </div>
     </div>
 );

@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import { BASE_ADHKAR_MORNING, BASE_ADHKAR_EVENING } from '../data/adkarSabahMasaaData';
 
-const toArabicNumerals = (num) => String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+// FIX: Correctly convert digits to numbers for array indexing.
+const toArabicNumerals = (num) => String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
 
 const ADHKAR_STATUS_KEY = 'sabah_masaa_status_v1';
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
@@ -7,9 +6,10 @@ import { DEFAULT_PHRASES } from '../data/tasbeehData';
 
 const LOCAL_STORAGE_KEY = 'ahmed_laila_tasbeeh_phrases';
 
+// FIX: Correctly convert digits to numbers for array indexing.
 const toArabicNumerals = (num) => {
     if (num === null || num === undefined) return '';
-    return String(num).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+    return String(num).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
 };
 const toEnglishNumerals = (str) => {
     if (str === null || str === undefined) return '';
@@ -55,7 +55,8 @@ const ThreeDButton = ({ label, onClick, color, padding = "py-3 px-4 text-base", 
     </button>
 );
 
-const ModalWrapper = ({ children, onClose, isOpen }: { children: React.ReactNode, onClose: () => void, isOpen: boolean }) => {
+// FIX: Made `children` prop optional to resolve "Property 'children' is missing" error.
+const ModalWrapper = ({ children, onClose, isOpen }: { children?: React.ReactNode, onClose: () => void, isOpen: boolean }) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4" onClick={onClose}>

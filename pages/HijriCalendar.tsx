@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
@@ -7,9 +6,10 @@ import { gregorianMonths, hijriMonths } from '../data/calendarData';
 const ARABIC_TO_ENGLISH_NUMERALS = { '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9' };
 
 // --- Helper Functions ---
+// FIX: Correctly convert digits to numbers for array indexing.
 function toArabicNumerals(num) {
     if (num === null || num === undefined) return '';
-    return String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+    return String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
 }
 
 function toEnglishNumerals(str) {

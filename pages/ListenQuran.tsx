@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
@@ -6,7 +5,8 @@ import { RECITERS, SURAH_LIST } from '../data/listenQuranData';
 
 const STORAGE_KEY = 'listen_quran_state_v7';
 
-const toArabicNumerals = (numStr) => String(numStr).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+// FIX: Correctly convert digits to numbers for array indexing.
+const toArabicNumerals = (numStr) => String(numStr).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[+d]);
 
 function formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) return toArabicNumerals('00:00');
