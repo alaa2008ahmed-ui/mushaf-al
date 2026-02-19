@@ -13,11 +13,13 @@ import ThemeSelector from './components/ThemesModal';
 import AdkarSabahMasaa from './pages/AdkarSabahMasaa';
 import Adia from './pages/Adia';
 import QuranReader from './pages/QuranReader'; // استيراد المكون الجديد
+import ExitConfirmModal from './components/ExitConfirmModal';
 
 // --- Main App Component ---
 function App() {
   const [history, setHistory] = useState(['home']);
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const page = history[history.length - 1];
 
@@ -46,56 +48,102 @@ function App() {
     if (historyRef.current.length > 1) {
       navigateBack();
     } else {
-      const appNavigator = window.navigator as any;
-      if (appNavigator.notification && typeof appNavigator.notification.confirm === 'function') {
-        appNavigator.notification.confirm(
-          'هل تريد الخروج من مصحف احمد وليلى؟',
-          (buttonIndex) => {
-            if (buttonIndex === 1) {
-              if (appNavigator.app && typeof appNavigator.app.exitApp === 'function') {
-                appNavigator.app.exitApp();
-              }
-            }
-          },
-          'تأكيد الخروج',
-          ['نعم', 'لا']
-        );
-      } else {
-        if (window.confirm('هل تريد الخروج من مصحف احمد وليلى؟')) {
-          if (appNavigator.app && typeof appNavigator.app.exitApp === 'function') {
-            appNavigator.app.exitApp();
-          }
-        }
-      }
+      setShowExitConfirm(true);
     }
   }, [navigateBack]);
 
-  // Effect for one-time device-ready setup (e.g., screen wake lock)
+    const handleConfirmExit = () => {
+        const appNavigator = window.navigator as any;
+        if (appNavigator.app && typeof appNavigator.app.exitApp === 'function') {
+            appNavigator.app.exitApp();
+        }
+    };
+
+  // Effect for wake lock management
   useEffect(() => {
-    const onDeviceReady = () => {
-        console.log("Cordova deviceready event fired. Initializing native features...");
-        
+    let wakeLock: any = null;
+    let isNativeWakeLockActive = false;
+
+    // --- Web Wake Lock API ---
+    const requestWebWakeLock = async () => {
+      // Don't try if the native lock is active or tab is not visible
+      if (isNativeWakeLockActive || document.visibilityState !== 'visible') {
+        return;
+      }
+      
+      if ('wakeLock' in navigator) {
+        try {
+          // Request a new wake lock.
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+          console.log('Web Wake Lock is active.');
+
+          wakeLock.addEventListener('release', () => {
+            // The lock was released by the browser (e.g., tab hidden).
+            // It will be re-acquired automatically by the visibilitychange handler.
+            console.log('Web Wake Lock was released.');
+          });
+
+        } catch (err: any) {
+          // This can fail if the Permissions Policy is not set.
+          // It's not a critical error for the app's functionality, just a missing enhancement.
+          // So, we log a warning instead of an error.
+          console.warn(`Could not acquire screen wake lock: ${err.message}`);
+        }
+      } else {
+        console.log('Web Wake Lock API is not supported in this environment.');
+      }
+    };
+
+    // --- Cordova Insomnia Plugin ---
+    const setupNativeWakeLock = () => {
         const win = window as any;
         if (win.plugins && win.plugins.insomnia) {
             win.plugins.insomnia.keepAwake(
-                () => console.log("Insomnia: Screen will stay on."),
-                () => console.warn("Insomnia: Failed to keep screen on.")
+                () => {
+                    console.log("Insomnia (native) wake lock enabled.");
+                    isNativeWakeLockActive = true;
+                },
+                () => {
+                    console.warn("Insomnia (native) wake lock failed. Falling back to Web API.");
+                    requestWebWakeLock();
+                }
             );
         } else {
-            console.log("Insomnia plugin not found. Screen may turn off.");
+            // If the plugin is not found in a Cordova environment, it's an issue, but we can still fall back.
+            console.log("Insomnia plugin not found. Using Web Wake Lock API.");
+            requestWebWakeLock();
         }
     };
-    document.addEventListener('deviceready', onDeviceReady, false);
-
-    // Cleanup: This runs when the app is fully closed/terminated.
+    
+    // Determine the environment and set up the appropriate wake lock mechanism.
+    // FIX: Cast `window` to `any` to access the `cordova` property, which is not part of the standard Window type but is injected in a Cordova environment.
+    if ((window as any).cordova && (window as any).cordova.platformId !== 'browser') {
+        document.addEventListener('deviceready', setupNativeWakeLock, false);
+    } else {
+        // Standard web environment. Use the Web Wake Lock API.
+        requestWebWakeLock(); // Initial request
+        document.addEventListener('visibilitychange', requestWebWakeLock); // Re-request when tab becomes visible
+    }
+    
+    // --- Cleanup ---
     return () => {
-        document.removeEventListener('deviceready', onDeviceReady, false);
-        const win = window as any;
-        if (win.plugins && win.plugins.insomnia && win.plugins.insomnia.allowSleepAgain) {
-            win.plugins.insomnia.allowSleepAgain(() => console.log("Insomnia: Allowed screen to sleep."), () => {});
+        // FIX: Cast `window` to `any` to access the `cordova` property for environment-specific cleanup.
+        if ((window as any).cordova && (window as any).cordova.platformId !== 'browser') {
+            document.removeEventListener('deviceready', setupNativeWakeLock, false);
+            const win = window as any;
+            if (win.plugins && win.plugins.insomnia && win.plugins.insomnia.allowSleepAgain) {
+                win.plugins.insomnia.allowSleepAgain(() => console.log("Insomnia: Allowed screen to sleep."), () => {});
+            }
+        } else {
+            document.removeEventListener('visibilitychange', requestWebWakeLock);
+            if (wakeLock !== null) {
+                wakeLock.release();
+                wakeLock = null;
+            }
         }
     };
   }, []); // Empty dependency array ensures this runs only once on mount.
+
 
   // Effect for managing the back button listener specifically
   useEffect(() => {
@@ -168,6 +216,11 @@ function App() {
     <>
       {renderPage()}
       {isThemeSelectorOpen && <ThemeSelector onClose={closeThemeSelector} />}
+      <ExitConfirmModal 
+        isOpen={showExitConfirm}
+        onClose={() => setShowExitConfirm(false)}
+        onConfirm={handleConfirmExit}
+      />
     </>
   );
 }

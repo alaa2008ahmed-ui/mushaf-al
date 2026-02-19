@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, FC } from 'react';
 import './QuranReader.css'; 
 import { JUZ_MAP, toArabic, THEMES, TAFSEERS } from '../components/QuranReader/constants';
@@ -681,6 +682,7 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
                 {isPageInputActive ? (
                     <input
                         ref={pageInputRef}
+                        id="header-page"
                         type="tel"
                         value={pageInput}
                         onChange={handlePageInputChange}

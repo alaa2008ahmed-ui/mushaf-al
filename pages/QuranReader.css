@@ -89,7 +89,12 @@
     border-bottom: none !important;
 }
 
-.page-content { text-align: justify; line-height: 2.3; font-size: 1.7rem; }
+.page-content {
+    text-align: right;
+    line-height: 2.3;
+    font-size: 1.7rem;
+    letter-spacing: 0.1px; /* Fix for Arabic justification bug in some renderers */
+}
 
 .page-footer {
     display: flex; justify-content: center; align-items: center;
@@ -158,6 +163,25 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.top-bar-text-button.page-input-style {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    outline: none;
+    box-sizing: border-box;
+    display: inline-block;
+    vertical-align: middle;
+    width: auto;
+    min-width: 60px;
+    padding: 0 10px;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    font-family: var(--font-hafs);
+    line-height: 36px;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 #surah-name-header, #juz-number-header { font-family: var(--font-hafs); }

@@ -65,13 +65,32 @@ const getMediaURL = (s) => {
     return s;
 };
 
+// FIX: Use Cordova Media plugin for more reliable audio playback on devices.
 const playNotificationSound = (source) => {
     if (!source) return;
-    try {
-        const audio = new Audio(getMediaURL(source));
-        audio.play().catch(e => console.error("Audio play failed:", e));
-    } catch (e) {
-        console.error("Failed to play notification sound:", e);
+    const mediaUrl = getMediaURL(source);
+    
+    // Prioritize Cordova Media Plugin if available (on native device)
+    if ((window as any).Media) {
+        let media: any | null = new (window as any).Media(mediaUrl,
+            () => { // success callback
+                console.log("playNotificationSound(): Audio Success");
+                if (media) media.release();
+            },
+            (err: any) => { // error callback
+                console.error("playNotificationSound(): Audio Error: ", err);
+                if (media) media.release();
+            }
+        );
+        media.play();
+    } else {
+        // Fallback to HTML5 Audio for web/browser environments
+        try {
+            const audio = new Audio(mediaUrl);
+            audio.play().catch(e => console.error("Audio play failed:", e));
+        } catch (e) {
+            console.error("Failed to play notification sound with HTML5 Audio:", e);
+        }
     }
 };
 
@@ -147,20 +166,36 @@ function PrayerTimes({ onBack }) {
                         }
                         
                         const toneConfig = config.tones[key];
-                        let soundPath = defaultTones[0].path; 
-
+                        let soundPath: string | null = null;
+    
+                        // Determine the correct sound path. Default tones use relative paths from the www folder.
+                        // Custom tones (data URLs) are not supported by the notification plugin and will fall back.
                         if (toneConfig && toneConfig.data && !toneConfig.data.startsWith('data:')) {
+                            // A specific built-in tone is selected
                             soundPath = toneConfig.data;
+                        } else {
+                            // No specific tone, or a custom tone was selected (which we can't use here).
+                            // Default to the first built-in adhan.
+                            soundPath = defaultTones[0].path;
+                            if (toneConfig && toneConfig.data && toneConfig.data.startsWith('data:')) {
+                                console.warn(`Notifications do not support custom audio files (data URLs). Falling back to default adhan for ${key}.`);
+                            }
                         }
-                        
-                        notificationsToSchedule.push({
+    
+                        const notification: any = {
                             id: index + 1,
                             title: `حان الآن موعد أذان ${prayerNamesAr[key]}`,
                             text: 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"',
                             trigger: { at: prayerDate },
-                            sound: 'file://' + soundPath,
                             foreground: true,
-                        });
+                        };
+    
+                        // The plugin expects a path relative to the www folder for assets. No 'file://' prefix.
+                        if (soundPath) {
+                            notification.sound = soundPath;
+                        }
+    
+                        notificationsToSchedule.push(notification);
                     }
                 });
 

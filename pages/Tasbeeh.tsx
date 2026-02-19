@@ -1,10 +1,14 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import type { Theme } from '../context/themes';
 import { DEFAULT_PHRASES } from '../data/tasbeehData';
 
-const LOCAL_STORAGE_KEY = 'ahmed_laila_tasbeeh_phrases';
+// FIX: Renamed to be more specific to phrases
+const PHRASES_STORAGE_KEY = 'ahmed_laila_tasbeeh_phrases';
+// FIX: Added a new key for other settings like color
+const SETTINGS_STORAGE_KEY = 'ahmed_laila_tasbeeh_settings_v1';
 
 // FIX: Correctly convert digits to numbers for array indexing.
 const toArabicNumerals = (num) => {
@@ -76,14 +80,17 @@ function Tasbeeh({ onBack }) {
     const [target, setTarget] = useState(33);
     const [activePhrase, setActivePhrase] = useState('');
     const [isCountingStopped, setIsCountingStopped] = useState(false);
-    const [modals, setModals] = useState({ target: false, phrase: false, add: false, delete: false });
+    // FIX: Added 'color' to the modals state object to manage the color picker modal.
+    const [modals, setModals] = useState({ target: false, phrase: false, add: false, delete: false, color: false });
     const [message, setMessage] = useState({ text: '', type: 'green', visible: false });
     const targetInputRef = useRef<HTMLInputElement>(null);
     const newPhraseInputRef = useRef<HTMLInputElement>(null);
+    // FIX: Added state to manage the counter's background color, initialized with the primary theme color.
+    const [counterColor, setCounterColor] = useState(theme.palette[0]);
 
     const loadPhrases = useCallback(() => {
         try {
-            const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+            const stored = localStorage.getItem(PHRASES_STORAGE_KEY);
             const userChanges = stored ? JSON.parse(stored) : [];
             const deletedTexts = userChanges.filter(c => c.deleted).map(c => c.text);
             const addedPhrases = userChanges.filter(c => !c.deleted);
@@ -108,7 +115,22 @@ function Tasbeeh({ onBack }) {
 
     useEffect(() => {
         loadPhrases();
-    }, [loadPhrases]);
+        // FIX: Load the counter color from local storage on component mount, falling back to the theme color.
+        try {
+            const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                if (settings.counterColor) {
+                    setCounterColor(settings.counterColor);
+                }
+            } else {
+                setCounterColor(theme.palette[0]);
+            }
+        } catch(e) {
+            console.warn("Could not load tasbeeh settings", e);
+            setCounterColor(theme.palette[0]);
+        }
+    }, [loadPhrases, theme.palette]);
 
     const showMessage = (text: string, type = 'green') => {
         setMessage({ text, type, visible: true });
@@ -143,7 +165,7 @@ function Tasbeeh({ onBack }) {
         try {
             const deletedDefaults = DEFAULT_PHRASES.filter(dp => !currentPhrases.some(cp => cp.text === dp.text)).map(p => ({ text: p.text, deleted: true }));
             const addedUserPhrases = currentPhrases.filter(cp => !DEFAULT_PHRASES.some(dp => dp.text === cp.text));
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([...deletedDefaults, ...addedUserPhrases]));
+            localStorage.setItem(PHRASES_STORAGE_KEY, JSON.stringify([...deletedDefaults, ...addedUserPhrases]));
             loadPhrases(); // Reload to ensure consistency
         } catch (e) { console.error("Failed to save tasbeeh phrases", e); }
     };
@@ -182,6 +204,33 @@ function Tasbeeh({ onBack }) {
         setModals(p => ({...p, target: false}));
     };
     
+    // FIX: New function to handle setting and saving the counter color.
+    const handleSetCounterColor = (color: string) => {
+        setCounterColor(color);
+        try {
+            const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            const settings = savedSettings ? JSON.parse(savedSettings) : {};
+            settings.counterColor = color;
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        } catch (e) {
+            console.error("Failed to save counter color", e);
+        }
+        showMessage('تم تغيير لون العداد.');
+        setModals(p => ({...p, color: false}));
+    };
+
+    // FIX: A list of predefined color options for the color picker modal.
+    const colorOptions = [
+        theme.palette[0],
+        theme.palette[1],
+        ...(theme.palette[2] ? [theme.palette[2]] : []),
+        '#3b82f6', // blue
+        '#ef4444', // red
+        '#10b981', // green
+        '#f97316', // orange
+        '#8b5cf6', // violet
+    ].filter((v, i, a) => a.indexOf(v) === i).slice(0, 8);
+
     return (
         <div className="h-screen flex flex-col">
             <header className="app-top-bar">
@@ -200,9 +249,11 @@ function Tasbeeh({ onBack }) {
                             <svg className="h-5 w-5 mr-2 flex-shrink-0" style={{color: theme.palette[1]}} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                         </button>
                     </div>
-                     <div className="grid grid-cols-2 gap-3">
-                         <button onClick={() => setModals(p => ({...p, add: true}))} className="py-2.5 px-4 font-bold rounded-full text-white text-sm" style={{backgroundColor: theme.palette[0]}}>إضافة ذكر</button>
-                         <button onClick={() => setModals(p => ({...p, delete: true}))} className="py-2.5 px-4 font-bold rounded-full themed-card text-sm">حذف ذكر</button>
+                    {/* FIX: Changed grid to 3 columns and added a button to open the color picker modal. */}
+                    <div className="grid grid-cols-3 gap-3">
+                         <button onClick={() => setModals(p => ({...p, add: true}))} className="py-2.5 px-2 font-bold rounded-full text-white text-xs sm:text-sm" style={{backgroundColor: theme.palette[0]}}>إضافة ذكر</button>
+                         <button onClick={() => setModals(p => ({...p, delete: true}))} className="py-2.5 px-2 font-bold rounded-full themed-card text-xs sm:text-sm">حذف ذكر</button>
+                         <button onClick={() => setModals(p => ({...p, color: true}))} className="py-2.5 px-2 font-bold rounded-full text-white text-xs sm:text-sm" style={{backgroundColor: theme.palette[1] || theme.palette[0]}}>لون العداد</button>
                     </div>
                  </div>
 
@@ -211,11 +262,12 @@ function Tasbeeh({ onBack }) {
                         <span className="block text-sm font-bold mb-1" style={{color: theme.palette[1]}}>{isCountingStopped && target > 0 ? 'تم الوصول للهدف! 🎉' : 'الهدف:'}</span>
                         <span className="text-3xl font-extrabold font-amiri" style={{color: theme.palette[0]}}>{toArabicNumerals(target > 0 ? target : 'مفتوح')}</span>
                     </div>
-                    <button onClick={handleIncrement} className={`tasbeeh-counter w-64 h-64 rounded-full flex flex-col items-center justify-center transition-all duration-200 ease-out cursor-pointer select-none relative z-10`}>
-                        <span className="text-9xl font-mono font-black" style={{ fontFamily: 'Amiri', textShadow: '0 4px 8px rgba(0,0,0,0.2)', color: theme.textColor }}>
+                    {/* FIX: Applied the selected background color to the counter button and set text color to white for contrast. */}
+                    <button onClick={handleIncrement} className={`tasbeeh-counter w-64 h-64 rounded-full flex flex-col items-center justify-center transition-all duration-200 ease-out cursor-pointer select-none relative z-10`} style={{ backgroundColor: counterColor }}>
+                        <span className="text-9xl font-mono font-black" style={{ fontFamily: 'Amiri', textShadow: '0 4px 8px rgba(0,0,0,0.2)', color: 'white' }}>
                             {toArabicNumerals(count)}
                         </span>
-                        <span className="text-lg font-bold mt-2" style={{color: theme.textColor, opacity: 0.8}}>
+                        <span className="text-lg font-bold mt-2" style={{color: 'white', opacity: 0.8}}>
                             {isCountingStopped ? 'اضغط للتصفير' : 'اضغط للعد'}
                         </span>
                     </button>
@@ -282,6 +334,26 @@ function Tasbeeh({ onBack }) {
                             {activePhrase === p.text && <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>}
                         </div>
                     ))}
+                </div>
+            </ModalWrapper>
+            
+            {/* FIX: Added a new modal for selecting the counter color. */}
+            <ModalWrapper isOpen={modals.color} onClose={() => setModals(p => ({...p, color: false}))}>
+                <h3 className="text-xl font-bold text-center border-b pb-2 themed-text">اختر لون العداد</h3>
+                <div className="grid grid-cols-4 gap-4 pt-4 justify-items-center">
+                    {colorOptions.map(color => (
+                        <button
+                            key={color}
+                            onClick={() => handleSetCounterColor(color)}
+                            className={`w-12 h-12 rounded-full border-4 transition-transform transform active:scale-90 ${counterColor === color ? 'ring-2 ring-offset-2 ring-offset-gray-100 dark:ring-offset-gray-800 ring-blue-500' : ''}`}
+                            style={{ backgroundColor: color, borderColor: 'rgba(255,255,255,0.5)' }}
+                        />
+                    ))}
+                </div>
+                <div className="pt-4 mt-2 border-t themed-text-muted/20">
+                    <button onClick={() => setModals(p => ({...p, color: false}))} className="w-full py-2 rounded-lg themed-card font-bold">
+                        إغلاق
+                    </button>
                 </div>
             </ModalWrapper>
 

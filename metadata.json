@@ -1,7 +1,8 @@
 {
-  "name": "Mushaf A&L 1.22",
+  "name": "Mushaf A&L 1.23",
   "description": "تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، والمزيد. مصمم ليكون رفيقك اليومي.",
   "requestFramePermissions": [
-    "geolocation"
+    "geolocation",
+    "screen-wake-lock"
   ]
 }
