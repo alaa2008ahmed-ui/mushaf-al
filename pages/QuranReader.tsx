@@ -12,6 +12,9 @@ import MushafPage from '../components/QuranReader/MushafPage';
 import Toast from '../components/QuranReader/Toast';
 import TafseerModal from '../components/QuranReader/TafseerModal';
 
+// Allow access to Cordova plugins on the window object
+declare var window: any;
+
 // --- Main Component ---
 interface QuranReaderProps {
     onBack: () => void;
@@ -221,11 +224,24 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
             playNextAyah();
         };
         const onError = () => {
-            if (audioRef.current?.error?.code !== 20) { // MEDIA_ERR_ABORTED
+            const audio = audioRef.current;
+            if (!audio) return;
+
+            // This error (code 4) often fires when src is intentionally changed or playback is aborted.
+            // We also check for empty src, as we set it to "" to stop playback.
+            // These are not real errors, so we don't show a toast.
+            if (!audio.src || (audio.error && audio.error.code === 4)) { // MEDIA_ERR_ABORTED
+                console.log("Audio playback stopped or aborted, likely intentionally. No error toast will be shown.");
                 setIsAudioLoading(false);
                 setIsPlaying(false);
-                showToast('خطأ في تحميل المقطع الصوتي.');
+                return;
             }
+            
+            // For any other genuine error, show the toast.
+            setIsAudioLoading(false);
+            setIsPlaying(false);
+            showToast('خطأ في تحميل المقطع الصوتي.');
+            console.error("Audio error occurred:", audio.error);
         };
         
         audio.addEventListener('play', onPlay);
@@ -638,7 +654,6 @@ const QuranReader: FC<QuranReaderProps> = ({ onBack }) => {
             
             {/* --- Modals --- */}
             {activeModals['surah-modal'] && <SurahJuzModal type="surah" quranData={quranData} onSelect={(s, a) => jumpToAyah(s, a)} onClose={() => closeModal('surah-modal')} />}
-            {/* FIX: Correctly handle 'juz' selection. The 'onSelect' prop for the Juz modal should be typed to accept a number, and the logic should correctly calculate the array index (j-1). */}
             {activeModals['juz-modal'] && <SurahJuzModal type="juz" quranData={quranData} onSelect={(j: number) => jumpToAyah(JUZ_MAP[j - 1].s, JUZ_MAP[j - 1].a)} onClose={() => closeModal('juz-modal')} />}
             {activeModals['bookmarks-modal'] && <BookmarksModal bookmarks={bookmarks} quranData={quranData} onSelect={(s,a) => jumpToAyah(s,a)} onDelete={deleteBookmark} onClose={() => closeModal('bookmarks-modal')} />}
             {activeModals['search-modal'] && <SearchModal quranData={quranData} onSelect={(s,a) => jumpToAyah(s,a)} onClose={() => closeModal('search-modal')} />}
