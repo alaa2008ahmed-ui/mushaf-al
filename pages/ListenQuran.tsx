@@ -168,13 +168,14 @@ function ListenQuran({ onBack }) {
 
     return (
         <div className="h-screen flex flex-col font-cairo overflow-hidden" style={{ backgroundColor: theme.bg, color: theme.textColor }}>
-
+            <header className="app-top-bar">
+                <div className="app-top-bar__inner">
+                    <h1 className="app-top-bar__title text-2xl font-kufi">الاستماع للقرآن</h1>
+                    <p className="app-top-bar__subtitle">تلاوات عطرة من أشهر القراء</p>
+                </div>
+            </header>
 
             <main className="w-full max-w-md mx-auto flex-1 flex flex-col p-4 z-10">
-                <div className="text-center pt-4 pb-2 flex-shrink-0">
-                    <h1 className="text-2xl font-bold tracking-tight" style={{ color: theme.textColor }}>الاستماع للقرآن</h1>
-                    <p className="text-sm" style={{ color: theme.textColor, opacity: 0.7 }}>تلاوات عطرة من أشهر القراء</p>
-                </div>
 
                 <div className="space-y-3 flex-shrink-0 py-4">
                     <select id="reciter-select" value={reciterId} onChange={(e) => setReciterId(e.target.value)} className="w-full p-3 text-center rounded-xl border font-bold appearance-none themed-card">

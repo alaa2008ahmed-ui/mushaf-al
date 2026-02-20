@@ -63,6 +63,17 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast }) => {
         }
 
         localStorage.setItem('toolbar_colors', JSON.stringify(themeColors));
+        localStorage.setItem('transparent_mode', 'false');
+
+        // Update quran_settings to match the theme's colors and font
+        const savedSettings = JSON.parse(localStorage.getItem('quran_settings') || '{}');
+        const updatedSettings = {
+            ...savedSettings,
+            bgColor: theme.bg,
+            textColor: theme.text,
+            fontFamily: theme.font
+        };
+        localStorage.setItem('quran_settings', JSON.stringify(updatedSettings));
 
         // Dispatch a custom event to notify the main component to reload theme
         window.dispatchEvent(new Event('theme-change'));

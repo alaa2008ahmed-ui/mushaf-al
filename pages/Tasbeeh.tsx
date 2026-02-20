@@ -235,7 +235,7 @@ function Tasbeeh({ onBack }) {
         <div className="h-screen flex flex-col">
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
-                    <h1 className="app-top-bar__title text-2xl">السبحة الإلكترونية</h1>
+                    <h1 className="app-top-bar__title text-2xl font-kufi">السبحة الإلكترونية</h1>
                     <p className="app-top-bar__subtitle">أضف أذكارك الخاصة وتتبع تسبيحك بدقة</p>
                 </div>
             </header>

@@ -91,7 +91,7 @@ function Qibla({ onBack }) {
         <div className="h-screen w-screen flex flex-col overflow-hidden">
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
-                    <h1 className="app-top-bar__title text-2xl">اتجاه القبلة</h1>
+                    <h1 className="app-top-bar__title text-2xl font-kufi">اتجاه القبلة</h1>
                     <p className="app-top-bar__subtitle">استخدم البوصلة لتحديد اتجاه الكعبة المشرفة</p>
                 </div>
             </header>

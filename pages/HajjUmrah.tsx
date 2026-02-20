@@ -69,7 +69,7 @@ function HajjUmrah({ onBack }) {
                                 <span>العودة</span>
                             </button>
                         )}
-                        <h1 className="app-top-bar__title text-2xl md:text-3xl tracking-wide">الحج والعمرة</h1>
+                        <h1 className="app-top-bar__title text-2xl md:text-3xl font-kufi tracking-wide">الحج والعمرة</h1>
                     </div>
                     <p className="app-top-bar__subtitle">دليل مبسّط لمناسك الحج والعمرة مع خطوات وأذكار واضحة</p>
                 </div>

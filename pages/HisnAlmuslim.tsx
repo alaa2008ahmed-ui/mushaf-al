@@ -71,7 +71,7 @@ function HisnAlmuslim({ onBack }) {
                                 <span>العودة</span>
                             </button>
                         )}
-                        <h1 className="app-top-bar__title text-xl sm:text-2xl flex items-center gap-2 justify-center">
+                        <h1 className="app-top-bar__title text-xl sm:text-2xl font-kufi flex items-center gap-2 justify-center">
                              <i className="fa-solid fa-shield-heart"></i> {door ? door.title : 'حصن المسلم'}
                         </h1>
                     </div>

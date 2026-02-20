@@ -465,7 +465,14 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
             const themeId = localStorage.getItem('current_theme_id') || 'default';
             const newTheme = THEMES[themeId as keyof typeof THEMES] || THEMES['default'];
             setCurrentTheme(newTheme);
-            setSettings(prev => ({ ...prev, bgColor: newTheme.bg, textColor: newTheme.text, fontFamily: newTheme.font }));
+            
+            const savedSettings = localStorage.getItem('quran_settings');
+            if (savedSettings) {
+                setSettings(JSON.parse(savedSettings));
+            } else {
+                setSettings(prev => ({ ...prev, bgColor: newTheme.bg, textColor: newTheme.text, fontFamily: newTheme.font }));
+            }
+            
             setToolbarColors(JSON.parse(localStorage.getItem('toolbar_colors') || '{}'));
             setIsTransparentMode(localStorage.getItem('transparent_mode') === 'true');
         };

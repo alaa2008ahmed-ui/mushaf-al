@@ -188,7 +188,7 @@ function HijriCalendar({ onBack }) {
         <div className={`h-screen flex flex-col`}>
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
-                    <h1 className="app-top-bar__title text-xl sm:text-2xl">التقويم الهجري الذكي</h1>
+                    <h1 className="app-top-bar__title text-xl sm:text-2xl font-kufi">التقويم الهجري الذكي</h1>
                     <p className="app-top-bar__subtitle">حوّل بين التاريخين الهجري والميلادي بسرعة مع عرض يومي دقيق</p>
                 </div>
             </header>

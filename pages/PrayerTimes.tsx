@@ -515,7 +515,7 @@ function PrayerTimes({ onBack }) {
                 <div className="app-top-bar__inner">
                     <div className="flex items-center justify-center gap-2">
                         <i onClick={refreshLocation} className="text-xl cursor-pointer active:rotate-180 duration-700 fa-solid fa-location-crosshairs"></i>
-                        <h1 className="app-top-bar__title text-xl sm:text-2xl font-black truncate">{config.location.cityGov}</h1>
+                        <h1 className="app-top-bar__title text-xl sm:text-2xl font-kufi truncate">{config.location.cityGov}</h1>
                     </div>
                      <div className="flex items-center justify-center gap-2" dir="rtl">
                         <p className="text-xs font-bold">{config.location.fullCountry}</p>
