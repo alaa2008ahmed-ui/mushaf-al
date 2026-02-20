@@ -7,8 +7,11 @@ declare var window: any; // Allow cordova plugins
 
 // --- Default Tones Configuration ---
 const defaultTones = [
-    { name: "الأذان الافتراضي 1", path: "assets/audio/adhan1.mp3" },
-    { name: "الأذان الافتراضي 2", path: "assets/audio/adhan2.mp3" },
+    { name: "أذان كامل", path: "assets/audio/adhan full.mp3" },
+    { name: "أذان 1", path: "assets/audio/adhan1.mp3" },
+    { name: "أذان 2", path: "assets/audio/adhan2.mp3" },
+    { name: "أذان 3", path: "assets/audio/adhan3.mp3" },
+    { name: "أذان 4", path: "assets/audio/adhan4.mp3" },
 ];
 
 // Helper Functions
@@ -168,18 +171,15 @@ function PrayerTimes({ onBack }) {
                         const toneConfig = config.tones[key];
                         let soundPath: string | null = null;
     
-                        // Determine the correct sound path. Default tones use relative paths from the www folder.
-                        // Custom tones (data URLs) are not supported by the notification plugin and will fall back.
+                        // Determine the correct sound path.
                         if (toneConfig && toneConfig.data && !toneConfig.data.startsWith('data:')) {
-                            // A specific built-in tone is selected
                             soundPath = toneConfig.data;
+                        } else if (toneConfig && toneConfig.data && toneConfig.data.startsWith('data:')) {
+                             // Custom tones (data URLs) are not supported by the notification plugin
+                             console.warn(`Notifications do not support custom audio files (data URLs). Falling back to default adhan for ${key}.`);
+                             soundPath = defaultTones[0].path;
                         } else {
-                            // No specific tone, or a custom tone was selected (which we can't use here).
-                            // Default to the first built-in adhan.
                             soundPath = defaultTones[0].path;
-                            if (toneConfig && toneConfig.data && toneConfig.data.startsWith('data:')) {
-                                console.warn(`Notifications do not support custom audio files (data URLs). Falling back to default adhan for ${key}.`);
-                            }
                         }
     
                         const notification: any = {
@@ -432,6 +432,13 @@ function PrayerTimes({ onBack }) {
         setIsModalOpen(false);
     };
 
+    const togglePrayerSound = (key) => {
+        setConfig(prev => ({
+            ...prev,
+            mutedPrayers: {...prev.mutedPrayers, [key]: !prev.mutedPrayers[key] }
+        }));
+    }
+
     const handleToneSelection = (e) => {
         const value = e.target.value;
         if (value === 'custom') {
@@ -469,13 +476,6 @@ function PrayerTimes({ onBack }) {
             reader.readAsDataURL(file);
         }
     };
-    
-    const togglePrayerSound = (key) => {
-        setConfig(prev => ({
-            ...prev,
-            mutedPrayers: {...prev.mutedPrayers, [key]: !prev.mutedPrayers[key] }
-        }));
-    }
 
     const renderToneSelector = () => {
         if (!currentEditingKey) return null;

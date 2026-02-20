@@ -8,6 +8,15 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, showToast }) => {
+    const [isClosing, setIsClosing] = useState(false);
+
+    const handleClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 300); // Match animation duration
+    };
+
     const [settings, setSettings] = useState(() => {
         const saved = localStorage.getItem('quran_settings');
         return saved ? JSON.parse(saved) : {
@@ -23,7 +32,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
     });
     
     const [hideUIOnScroll, setHideUIOnScroll] = useState(() => localStorage.getItem('hide_ui_on_scroll') === 'true');
-    const [showSajdahCard, setShowSajdahCard] = useState(() => localStorage.getItem('show_sajdah_card') === 'true');
+    const [showSajdahCard, setShowSajdahCard] = useState(() => {
+        const saved = localStorage.getItem('show_sajdah_card');
+        return saved !== null ? saved === 'true' : true;
+    });
+    const [showMarquee, setShowMarquee] = useState(() => {
+        const saved = localStorage.getItem('show_marquee');
+        return saved !== null ? saved === 'true' : true;
+    });
 
 
     const updateSetting = (key: string, value: any) => {
@@ -48,6 +64,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
         showToast(checked ? 'تم تفعيل بطاقة السجدة الكبرى' : 'تم إيقاف بطاقة السجدة الكبرى');
     };
 
+    const handleMarqueeToggle = (checked: boolean) => {
+        setShowMarquee(checked);
+        localStorage.setItem('show_marquee', String(checked));
+        window.dispatchEvent(new Event('settings-change'));
+        showToast(checked ? 'تم تفعيل شريط الأخبار' : 'تم إيقاف شريط الأخبار');
+    };
+
 
     const getReaderName = (id: string) => READERS.find(r => r.id === id)?.name || id;
     const getTafseerName = (id: string) => TAFSEERS.find(t => t.id === id)?.name || id;
@@ -65,11 +88,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 z-[150] flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
-            <div className="modal-skinned w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] bg-white dark:bg-gray-800 text-gray-800 dark:text-white" onClick={e => e.stopPropagation()}>
+        <div className={`fixed inset-0 bg-gray-900 bg-opacity-75 z-[150] flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`} onClick={handleClose}>
+            <div className={`modal-skinned w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] bg-white dark:bg-gray-800 text-gray-800 dark:text-white ${isClosing ? 'animate-modal-exit' : 'animate-modal-enter'}`} onClick={e => e.stopPropagation()}>
                 <div className="p-3 flex justify-between items-center h-12 flex-none theme-header-bg">
                     <h2 className="text-lg font-bold">إعدادات العرض</h2>
-                    <button onClick={onClose} className="hover:opacity-80 rounded-full bg-white/20 w-8 h-8 flex items-center justify-center">✕</button>
+                    <button onClick={handleClose} className="hover:opacity-80 rounded-full bg-white/20 w-8 h-8 flex items-center justify-center">✕</button>
                 </div>
                 <div className="p-3 space-y-2 overflow-y-auto text-center">
                     <div className="border-b border-gray-200 dark:border-gray-700 py-1">
@@ -181,11 +204,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                 </div>
                             </div>
                         </div>
+                        <div className="pt-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-bold opacity-80">إظهار شريط الأخبار</label>
+                                <div className="relative inline-block w-10 align-middle select-none">
+                                    <input type="checkbox" id="show-marquee" checked={showMarquee} onChange={(e) => handleMarqueeToggle(e.target.checked)} className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-2 appearance-none cursor-pointer"/>
+                                    <label htmlFor="show-marquee" className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer ${showMarquee ? 'bg-emerald-500' : 'bg-gray-300'}`}></label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="border-b border-gray-200 dark:border-gray-700 py-1">
                         <div className="custom-select-wrapper">
-                            <button onClick={() => { onClose(); onOpenModal('toolbar-color-picker-modal'); }} className="custom-select-display text-xs h-8 w-full text-right px-2 flex items-center justify-between">
+                            <button onClick={() => onOpenModal('toolbar-color-picker-modal')} className="custom-select-display text-xs h-8 w-full text-right px-2 flex items-center justify-between">
                                 <span>تخصيص الواجهة</span>
                                 <i className="fa-solid fa-chevron-left text-gray-500 text-xs"></i>
                             </button>
@@ -211,7 +243,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                     </div>
                 </div>
                 <div className="bg-gray-100 dark:bg-gray-700 p-3 text-center flex-none">
-                    <button onClick={onClose} className="theme-accent-btn bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-8 rounded-lg shadow text-sm w-full">حفظ وإغلاق</button>
+                    <button onClick={handleClose} className="theme-accent-btn bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-8 rounded-lg shadow text-sm w-full">حفظ وإغلاق</button>
                 </div>
             </div>
         </div>

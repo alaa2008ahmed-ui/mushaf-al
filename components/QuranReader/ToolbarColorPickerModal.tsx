@@ -10,6 +10,14 @@ interface ToolbarColorPickerModalProps {
 
 // FIX: Add `onOpenModal` to props destructuring to make it available in the component.
 const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClose, onOpenModal, showToast, currentTheme, toolbarColors }) => {
+    const [isClosing, setIsClosing] = useState(false);
+
+    const handleClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 300); // Match animation duration
+    };
     const [isTransparentMode, setIsTransparentMode] = useState(() => localStorage.getItem('transparent_mode') === 'true');
     const [headerSync, setHeaderSync] = useState(false);
     const [footerSync, setFooterSync] = useState(false);
@@ -111,7 +119,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
     if (editingType) {
         return (
             <div className="fixed inset-0 z-[220] bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn" onClick={() => setEditingType(null)}>
-                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden scale-100 transition-transform" onClick={e => e.stopPropagation()}>
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-modal-enter" onClick={e => e.stopPropagation()}>
                     <div className="p-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex justify-between items-center">
                         <h3 className="font-bold text-lg">تخصيص: {getName(editingType)}</h3>
                         <button onClick={() => setEditingType(null)} className="text-white hover:bg-white/20 rounded-full p-1">✕</button>
@@ -180,8 +188,8 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
     const allButtons = ['surah', 'juz', 'page', 'audio', 'btn-menu', 'btn-settings', 'btn-home', 'btn-bookmark', 'btn-autoscroll', 'btn-themes', 'btn-bookmarks-list', 'btn-search'];
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn" onClick={onClose}>
-            <div className="modal-skinned bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden transform transition-all" onClick={e => e.stopPropagation()}>
+        <div className={`fixed inset-0 bg-black bg-opacity-60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`} onClick={handleClose}>
+            <div className={`modal-skinned bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden ${isClosing ? 'animate-modal-exit' : 'animate-modal-enter'}`} onClick={e => e.stopPropagation()}>
                 <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white flex justify-between items-center shadow-md flex-none theme-header-bg">
                     <h3 className="text-lg font-extrabold flex items-center">
                         <i className="fa-solid fa-palette ml-2"></i>
@@ -260,7 +268,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                     </div>
                 </div>
                 <div className="p-3 bg-gray-100 dark:bg-gray-900 border-t dark:border-gray-700 flex justify-center items-center flex-none">
-                    <button onClick={() => { onClose(); onOpenModal('settings-modal'); }} className="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold shadow hover:bg-gray-700 text-xs">إغلاق</button>
+                    <button onClick={handleClose} className="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold shadow hover:bg-gray-700 text-xs">الرجوع للإعدادات</button>
                 </div>
             </div>
         </div>

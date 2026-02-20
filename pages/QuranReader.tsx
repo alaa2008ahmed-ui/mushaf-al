@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, FC } from 'react';
 import './QuranReader.css'; 
 import { JUZ_MAP, toArabic, THEMES, TAFSEERS } from '../components/QuranReader/constants';
@@ -8,6 +7,7 @@ import SettingsModal from '../components/QuranReader/SettingsModal';
 import ToolbarColorPickerModal from '../components/QuranReader/ToolbarColorPickerModal';
 import { QuranDownloadModal, TafsirDownloadModal } from '../components/QuranReader/DownloadModals';
 import SurahJuzModal from '../components/QuranReader/SurahJuzModal';
+import { KeepAwake } from '@capacitor-community/keep-awake';
 import BookmarksModal from '../components/QuranReader/BookmarksModal';
 import MushafPage from '../components/QuranReader/MushafPage';
 import Toast from '../components/QuranReader/Toast';
@@ -25,20 +25,75 @@ const SajdahCardModal: FC<{
         <div className="fixed inset-0 z-[250] bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn" onClick={onClose}>
             <div className="modal-skinned w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[90vh] bg-white dark:bg-gray-800" onClick={e => e.stopPropagation()}>
                 <div className="p-4 theme-header-bg rounded-t-2xl text-center">
-                    <h3 className="font-bold text-lg">آية سجدة</h3>
+                    <h3 className="font-bold text-lg">أحكام سجود التلاوة</h3>
                     <p className="text-xs opacity-80 mt-1">
-                        سورة {info.surah} - آية {toArabic(info.ayah)} | الجزء {toArabic(info.juz)} - صفحة {toArabic(info.page)}
+                        عند آية سجدة: سورة {info.surah} - آية {toArabic(info.ayah)}
                     </p>
                 </div>
-                <div className="p-5 overflow-y-auto text-right leading-relaxed">
-                    <p>عند المرور بآية سجدة أثناء تلاوة القرآن، يُسن للقارئ (رجلًا أو امرأة) التكبير والسجود سجدة واحدة، سواء كان ذلك في الصلاة أو خارجها.</p>
-                    <p className="mt-2">يُقال في السجود: "سبحان ربي الأعلى" و"سجد وجهي للذي خلقه وصوره وشق سمعه وبصره بحوله وقوته"، مع الدعاء بما تيسر (مثل: اللهم اغفر لي).</p>
-                    <p className="mt-4 font-bold">خطوات سجود التلاوة:</p>
-                    <ul className="list-disc pr-5 mt-2 space-y-1 text-sm">
-                        <li><b>خارج الصلاة:</b> يستحب الطهارة واستقبال القبلة، يكبر للسجود، يسجد سجدة واحدة ويقول دعاء السجود، ثم يرفع بلا تكبير ولا سلام.</li>
-                        <li><b>داخل الصلاة:</b> يكبر للسجود، يسجد ويقول الأذكار، ثم يكبر للرفع من السجود ويعود للقراءة.</li>
-                        <li><b>في حالة تعذر السجود:</b> (كالمواصلات أو العمل)، يمكن تأجيلها أو التكبير وقول: "سبحان الله، والحمد لله، ولا إله إلا الله، والله أكبر".</li>
-                    </ul>
+                <div className="p-5 overflow-y-auto text-right leading-relaxed space-y-4 text-sm">
+                    <div>
+                        <p><b>1. تعريف سجود التلاوة</b></p>
+                        <p className="mt-1">هو سجود يؤديه القارئ أو المستمع عند قراءة آية من آيات السجود في القرآن الكريم، تعظيماً لله تعالى وإظهاراً للعبودية. وقد ثبت في صحيح مسلم عن أبي هريرة رضي الله عنه قال: قال رسول الله ﷺ:</p>
+                        <blockquote className="mt-2 p-2 border-r-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-sm italic">"إذَا قَرَأَ ابنُ آدَمَ السَّجْدَةَ فَسَجَدَ، اعْتَزَلَ الشَّيْطَانُ يَبْكِي، يقولُ: يا وَيْلَهُ، أُمِرَ ابنُ آدَمَ بالسُّجُودِ فَسَجَدَ فَلَهُ الجَنَّةُ، وأُمِرْتُ بالسُّجُودِ فأبَيْتُ فَلِيَ النَّارُ".</blockquote>
+                    </div>
+
+                    <div>
+                        <p><b>2. عدد آيات السجدة ومواضعها</b></p>
+                        <p className="mt-1 mb-2">اتفق جمهور العلماء على وجود آيات السجود في القرآن، وأشهر الآراء أنها 15 سجدة، وهي موزعة كالآتي:</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                            <div className="text-right">الأعراف: <b>{toArabic(206)}</b></div>
+                            <div className="text-right">النمل: <b>{toArabic(25)}</b></div>
+                            <div className="text-right">الرعد: <b>{toArabic(15)}</b></div>
+                            <div className="text-right">السجدة: <b>{toArabic(15)}</b></div>
+                            <div className="text-right">النحل: <b>{toArabic(49)}</b></div>
+                            <div className="text-right">ص: <b>{toArabic(24)}</b></div>
+                            <div className="text-right">الإسراء: <b>{toArabic(107)}</b></div>
+                            <div className="text-right">فصلت: <b>{toArabic(37)}</b></div>
+                            <div className="text-right">مريم: <b>{toArabic(58)}</b></div>
+                            <div className="text-right">النجم: <b>{toArabic(62)}</b></div>
+                            <div className="text-right">الحج (سجدتان): <b>{toArabic(18)} و {toArabic(77)}</b></div>
+                            <div className="text-right">الانشقاق: <b>{toArabic(21)}</b></div>
+                            <div className="text-right">الفرقان: <b>{toArabic(60)}</b></div>
+                            <div className="text-right">العلق: <b>{toArabic(19)}</b></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p><b>3. حكم سجود التلاوة</b></p>
+                        <p className="mt-1 mb-2">اختلف الفقهاء في حكمها على قولين مشهورين:</p>
+                        <ul className="list-disc pr-5 space-y-2">
+                            <li><b>جمهور العلماء (الشافعية والمالكية والحنابلة):</b> أنها سُنّة مؤكدة وليست واجبة؛ واستدلوا بأن عمر بن الخطاب رضي الله عنه قرأ السجدة يوم الجمعة على المنبر فنزل وسجد، ثم قرأها في الجمعة التالية فلم يسجد وقال: "إن الله لم يفرض علينا السجود إلا أن نشاء".</li>
+                            <li><b>الحنفية:</b> ذهبوا إلى أنها واجبة على القارئ والمستمع.</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <p><b>4. شروط وكيفية سجود التلاوة</b></p>
+                        <div className="space-y-3 mt-1">
+                            <p><b>الشروط:</b><br/>يشترط لها عند جمهور الفقهاء ما يشترط للصلاة (الطهارة، استقبال القبلة، ستر العورة)، بينما ذهب بعض العلماء (مثل ابن تيمية والشوكاني) إلى أنه يجوز السجود دون طهارة (مثل سجود الشكر) لأنها ليست صلاة كاملة، لكن الأفضل والأحوط هو التطهر.</p>
+                            <div>
+                                <p><b>الكيفية:</b></p>
+                                <ul className="list-disc pr-5 space-y-2 mt-1">
+                                    <li><b>التكبير:</b> يُكبر الساجد عند الهويّ للسجود (وعند الرفع منه إذا كان داخل الصلاة).</li>
+                                    <li><b>السجود:</b> سجدة واحدة كسجدة الصلاة.</li>
+                                    <li>
+                                        <b>الدعاء:</b> يُشرع فيها ما يقال في سجود الصلاة "سبحان ربي الأعلى"، ويُستحب الدعاء المأثور:
+                                        <blockquote className="mt-2 p-2 border-r-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-sm italic">"سَجَدَ وَجْهِي لِلَّذِي خَلَقَهُ، وَشَقَّ سَمْعَهُ وَبَصَرَهُ، بِحَوْلِهِ وَقُوَّتِهِ".</blockquote>
+                                        <blockquote className="mt-2 p-2 border-r-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-sm italic">"اللَّهُمَّ اكْتُبْ لِي بِهَا عِنْدَكَ أَجْرًا، وَضَعْ عَنِّي بِهَا وِزْرًا، وَاجْعَلْهَا لِي عِنْدَكَ ذُخْرًا، وَتَقَبَّلْهَا مِنِّي كَمَا تَقَبَّلْتَهَا مِنْ عَبْدِكَ دَاوُدَ".</blockquote>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p><b>5. ملاحظات هامة</b></p>
+                        <ul className="list-disc pr-5 space-y-2 mt-1">
+                            <li><b>داخل الصلاة:</b> إذا قرأ الإمام آية سجدة، يسجد ويسجد المأمومون معه.</li>
+                            <li><b>للمستمع:</b> يشرع السجود للمستمع الذي يقصد سماع القرآن، أما "السامع" (من مرّ صدفة أو سمعها في مكان عام دون قصد) فلا يجب عليه السجود عند كثير من الفقهاء.</li>
+                            <li><b>العجز عن السجود:</b> من لم يستطع السجود لسبب ما (كأن يكون في وسيلة مواصلات)، يمكنه الإيماء برأسه أو الاكتفاء بالذكر.</li>
+                        </ul>
+                    </div>
                 </div>
                 <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-2xl">
                     <button onClick={onClose} className="w-full theme-accent-btn py-2.5 rounded-xl font-bold transition">
@@ -72,6 +127,10 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
 
     const [autoScrollState, setAutoScrollState] = useState({ isActive: false, isPaused: false, elapsedTime: 0 });
     const [hideUIOnScroll, setHideUIOnScroll] = useState(() => localStorage.getItem('hide_ui_on_scroll') === 'true');
+    const [showSajdahCard, setShowSajdahCard] = useState(() => {
+        const saved = localStorage.getItem('show_sajdah_card');
+        return saved !== null ? saved === 'true' : true;
+    });
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [isAudioLoading, setIsAudioLoading] = useState(false);
@@ -96,6 +155,48 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
         const themeId = localStorage.getItem('current_theme_id') || 'default';
         return THEMES[themeId as keyof typeof THEMES] || THEMES['default'];
     });
+
+    // Keep screen awake logic
+    useEffect(() => {
+        let wakeLock: any = null;
+
+        const requestWakeLock = async () => {
+            // 1. Try Capacitor KeepAwake (for APK)
+            try {
+                await KeepAwake.keepAwake();
+            } catch (e) {
+                // Not in Capacitor or failed
+            }
+
+            // 2. Try Web Screen Wake Lock API (Fallback/Web)
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await (navigator as any).wakeLock.request('screen');
+                } catch (err) {
+                    console.warn('Wake Lock request failed:', err);
+                }
+            }
+        };
+
+        requestWakeLock();
+
+        // Re-request wake lock when page becomes visible again
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                requestWakeLock();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            KeepAwake.allowSleep().catch(() => {});
+            if (wakeLock) {
+                wakeLock.release().catch(() => {});
+            }
+        };
+    }, []);
 
     const [toolbarColors, setToolbarColors] = useState(() => JSON.parse(localStorage.getItem('toolbar_colors') || '{}'));
     const [isTransparentMode, setIsTransparentMode] = useState(() => localStorage.getItem('transparent_mode') === 'true');
@@ -126,6 +227,12 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
     useEffect(() => { isAudioLoadingRef.current = isAudioLoading; }, [isAudioLoading]);
 
     useEffect(() => { currentAyahRef.current = currentAyah; }, [currentAyah]);
+
+    useEffect(() => {
+        if (isPlaying || isAudioLoading) {
+            playAudio(currentAyah.s, currentAyah.a);
+        }
+    }, [settings.reader]);
     
     useEffect(() => {
         if (isPageInputActive && pageInputRef.current) {
@@ -155,9 +262,7 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
 
         showSajdahNotification(surahName, ayahNum);
 
-        const showCard = localStorage.getItem('show_sajdah_card') === 'true';
-
-        if (showCard) {
+        if (showSajdahCard) {
             if (!quranData) return;
             const juz = JUZ_MAP.slice().reverse().find(j => (sNum > j.s) || (sNum === j.s && ayahNum >= j.a))?.j || 1;
             const page = quranData.surahs[sNum - 1]?.ayahs.find((ay:any) => ay.numberInSurah === ayahNum)?.page || 1;
@@ -183,7 +288,7 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
                 wasPlaying
             });
         }
-    }, [quranData, showSajdahNotification, stopAudio]);
+    }, [quranData, showSajdahNotification, stopAudio, showSajdahCard]);
 
     const handleCloseSajdahCard = () => {
         if (sajdahCardInfo.wasAutoscrolling) {
@@ -227,7 +332,7 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
         const surah = quranData.surahs[s - 1];
         if (!surah) return;
 
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 10; i++) {
             const ayahNum = startAyah + i;
             if (ayahNum > surah.ayahs.length) break;
             const cacheKey = `${s}:${ayahNum}`;
@@ -369,6 +474,8 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
             if (saved) setSettings(JSON.parse(saved));
             setToolbarColors(JSON.parse(localStorage.getItem('toolbar_colors') || '{}'));
             setHideUIOnScroll(localStorage.getItem('hide_ui_on_scroll') === 'true');
+            const savedSajdah = localStorage.getItem('show_sajdah_card');
+            setShowSajdahCard(savedSajdah !== null ? savedSajdah === 'true' : true);
             setIsTransparentMode(localStorage.getItem('transparent_mode') === 'true');
         };
         window.addEventListener('theme-change', handleThemeChange);
@@ -436,12 +543,16 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
             const { scrollTop, scrollHeight, clientHeight } = contentEl;
             if (scrollTop < clientHeight) {
                 setVisiblePages(prev => {
+                    // FIX: Guard against applying Math.min on an empty array, which results in Infinity. This prevents potential arithmetic errors and invalid state.
+                    if (prev.length === 0) return prev;
                     const firstPage = Math.min(...prev);
                     return firstPage > 1 ? [...new Set([firstPage - 1, ...prev])] : prev;
                 });
             }
             if (scrollHeight - scrollTop <= clientHeight + 200) {
                 setVisiblePages(prev => {
+                    // FIX: Guard against applying Math.max on an empty array, which results in -Infinity. This prevents potential arithmetic errors and invalid state.
+                    if (prev.length === 0) return prev;
                     const lastPage = Math.max(...prev);
                     return lastPage < 604 ? [...new Set([...prev, lastPage + 1])] : prev;
                 });
@@ -505,7 +616,7 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
         const ayah = surah?.ayahs.find((ay:any) => ay.numberInSurah === a);
         if (!ayah) return;
         const p = Number(ayah.page);
-        setVisiblePages([...new Set([p, p + 1, p + 2, p - 1, p - 2])].filter(n => n > 0 && n <= 604).sort((a,b) => a-b));
+        setVisiblePages([...new Set([p, p + 1, p + 2, p - 1, p - 2])].filter(n => n > 0 && n <= 604).sort((a: number, b: number) => a - b));
         setTimeout(() => {
             const el = document.getElementById(`ayah-${s}-${a}`);
             if (el) {
@@ -706,7 +817,7 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
             <ReadingTimer isVisible={autoScrollState.isPaused || (!autoScrollState.isActive && autoScrollState.elapsedTime > 0)} elapsedTime={autoScrollState.elapsedTime} />
             <div id="mushaf-content" ref={mushafContentRef} onClick={pauseResumeAutoScroll} className="flex-grow overflow-y-auto w-full relative touch-pan-y" style={isTransparentMode ? { position: 'absolute', top: 0, bottom: 0, height: '100%', zIndex: 0, paddingTop: '80px', paddingBottom: '80px' } : {}}>
                 <div id="pages-container" className="full-mushaf-container">
-                   {[...new Set(visiblePages)].sort((a,b) => a-b).map(pageNum => (<MushafPage key={pageNum} pageNum={pageNum} pageData={getPageData(pageNum)} highlightedAyahId={highlightedAyahId} onAyahClick={handleAyahClick} onVerseClick={handleVerseClick} settings={settings} />))}
+                   {[...new Set(visiblePages)].sort((a: number, b: number) => a - b).map(pageNum => (<MushafPage key={pageNum} pageNum={pageNum} pageData={getPageData(pageNum)} highlightedAyahId={highlightedAyahId} onAyahClick={handleAyahClick} onVerseClick={handleVerseClick} settings={settings} />))}
                 </div>
             </div>
             <SajdahNotification isVisible={sajdahInfo.show} surah={sajdahInfo.surah} ayah={sajdahInfo.ayah} />
@@ -725,8 +836,8 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
                 </button>
                 <button id="btn-home" onClick={onBack} className="bottom-bar-button btn-green flex-1 mx-1 h-10" style={getToolbarStyle('btn-home', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBg)}><i className="fa-solid fa-home"></i><span className="hidden sm:inline">الرئيسية</span></button>
             </footer>
-            {activeModals['surah-modal'] && <SurahJuzModal type="surah" quranData={quranData} onSelect={(s, a) => jumpToAyah(s, a)} onClose={() => closeModal('surah-modal')} />}
-            {activeModals['juz-modal'] && <SurahJuzModal type="juz" quranData={quranData} onSelect={(j: number) => jumpToAyah(JUZ_MAP[j - 1].s, JUZ_MAP[j - 1].a)} onClose={() => closeModal('juz-modal')} />}
+            {activeModals['surah-modal'] && <SurahJuzModal type="surah" quranData={quranData} onSelect={(s, a) => { closeModal('surah-modal'); setTimeout(() => jumpToAyah(s, a), 0); }} onClose={() => closeModal('surah-modal')} />}
+            {activeModals['juz-modal'] && <SurahJuzModal type="juz" quranData={quranData} onSelect={(j: number) => { closeModal('juz-modal'); setTimeout(() => jumpToAyah(JUZ_MAP[j - 1].s, JUZ_MAP[j - 1].a), 0); }} onClose={() => closeModal('juz-modal')} />}
             {activeModals['bookmarks-modal'] && <BookmarksModal bookmarks={bookmarks} quranData={quranData} onSelect={(s,a) => jumpToAyah(s,a)} onDelete={deleteBookmark} onClose={() => closeModal('bookmarks-modal')} />}
             {activeModals['search-modal'] && <SearchModal quranData={quranData} onSelect={(s,a) => jumpToAyah(s,a)} onClose={() => closeModal('search-modal')} />}
             {activeModals['themes-modal'] && <ThemesModal onClose={() => closeModal('themes-modal')} showToast={showToast} />}

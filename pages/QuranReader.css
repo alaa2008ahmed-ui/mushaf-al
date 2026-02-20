@@ -90,7 +90,7 @@
 }
 
 .page-content {
-    text-align: right;
+    text-align: justify;
     line-height: 2.3;
     font-size: 1.7rem;
     letter-spacing: 0.1px; /* Fix for Arabic justification bug in some renderers */
@@ -159,12 +159,6 @@
     text-align: center;
 }
 
-.top-bar-text-button > span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .top-bar-text-button.page-input-style {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -188,11 +182,13 @@
 #header-page { font-family: var(--font-hafs); }
 
 #surah-name-header { background: #fff; color: #10b981; border-color: #10b981; flex: 1; min-width: 0; margin: 0 4px; font-size: 1rem; }
-#juz-number-header, #header-page { background: #fff; color: #6d28d9; border-color: #6d28d9; width: auto; min-width: 60px; padding: 0 10px; flex-shrink: 0; font-size: 0.8rem; }
+#juz-number-header { background: #fff; color: #6d28d9; border-color: #6d28d9; width: auto; min-width: 60px; padding: 0 10px; flex-shrink: 0; font-size: 0.8rem; }
+#header-page { background: #fff; color: #6d28d9; border-color: #6d28d9; width: 80px; min-width: 80px; box-sizing: border-box; padding: 0 10px; flex-shrink: 0; font-size: 0.8rem; }
 #btn-play { background: #fff; color: #10b981; border-color: #10b981; width: 44px; flex-shrink: 0; }
 
 .dark #surah-name-header { background-color: #1f2937 !important; color: #34d399 !important; border-color: #34d399 !important; }
-.dark #juz-number-header, .dark #header-page { background-color: #1f2937 !important; color: #a78bfa !important; border-color: #a78bfa !important; }
+.dark #juz-number-header { background-color: #1f2937 !important; color: #a78bfa !important; border-color: #a78bfa !important; }
+.dark #header-page { background-color: #1f2937 !important; color: #a78bfa !important; border-color: #a78bfa !important; }
 .dark #btn-play { background-color: #1f2937 !important; color: #34d399 !important; border-color: #34d399 !important; }
 
 .bottom-bar-button {
@@ -204,8 +200,6 @@
     font-family: var(--font-ui);
     border: 2px solid;
 }
-.bottom-bar-button i { margin-left: 0.25rem; }
-
 .btn-green { background-color: #10b981; border-color: #059669; width: 100%; } 
 .btn-green:hover { background-color: #059669; }
 .btn-purple { background-color: #7e22ce; border-color: #6b21a8; width: 100%; } 
