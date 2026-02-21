@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback } from 'react';
 import ThemeSelector from './components/ThemesModal';
-import ExitConfirmModal from './components/ExitConfirmModal';
+import ExitNotification from './components/ExitNotification';
 import AppRouter from './router/AppRouter';
 import { useWakeLock } from './hooks/useWakeLock';
 import { useBackButton } from './hooks/useBackButton';
@@ -68,10 +68,9 @@ function App() {
       )}
 
       {showExitConfirm && (
-          <ExitConfirmModal
-              isOpen={showExitConfirm}
+          <ExitNotification
               onConfirm={handleConfirmExit}
-              onClose={() => setShowExitConfirm(false)}
+              onCancel={() => setShowExitConfirm(false)}
           />
       )}
     </>

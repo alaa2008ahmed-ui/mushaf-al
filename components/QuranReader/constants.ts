@@ -34,6 +34,7 @@ export const READERS = [
     { id: 'Abdullah_Basfar_192kbps', name: 'عبدالله بصفر' }, 
     { id: 'Abu_Bakr_Ash-Shaatree_128kbps', name: 'أبو بكر الشاطري' }, 
     { id: 'Mohammad_al_Tablaway_128kbps', name: 'محمد الطبلاوي' }, 
+    { id: 'Husary_128kbps', name: 'محمود خليل الحصري' }, 
     { id: 'Ghamadi_40kbps', name: 'سعد الغامدي' } 
 ];
 export const TAFSEERS = [{ id: 'ar.muyassar', name: 'التفسير الميسر' }, { id: 'ar.baghawi', name: 'تفسير البغوي' }, { id: 'ar.qurtubi', name: 'تفسير القرطبي' }, { id: 'ar.jalalayn', name: 'تفسير الجلالين' }, { id: 'ar.waseet', name: 'التفسير الوسيط' }];

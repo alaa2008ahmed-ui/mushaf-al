@@ -8,6 +8,7 @@ function AthkarAlSalah({ onBack }) {
     const { theme } = useTheme();
     const [currentPrayer, setCurrentPrayer] = useState(null);
     const [athkarList, setAthkarList] = useState([]);
+    const [zoomedText, setZoomedText] = useState(null);
 
     const openPrayer = (prayerId, titleText) => {
         let currentAthkarData = JSON.parse(JSON.stringify(baseAthkar));
@@ -58,6 +59,14 @@ function AthkarAlSalah({ onBack }) {
         );
     };
 
+    const handleHomeClick = () => {
+        if (currentPrayer) {
+            setCurrentPrayer(null);
+        } else {
+            onBack();
+        }
+    };
+
     return (
         <div className="h-screen flex flex-col overflow-hidden">
             <header className="app-top-bar">
@@ -70,7 +79,7 @@ function AthkarAlSalah({ onBack }) {
                             </button>
                         )}
                         <h1 className="app-top-bar__title text-xl sm:text-2xl font-kufi flex items-center gap-2 justify-center">
-                            {currentPrayer ? currentPrayer.title : <><i className="fa-solid fa-mosque"></i> أذكار الصلوات</>}
+                            {currentPrayer ? currentPrayer.title : <>أذكار الصلوات</>}
                         </h1>
                     </div>
                     <p className="app-top-bar__subtitle">
@@ -79,29 +88,29 @@ function AthkarAlSalah({ onBack }) {
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar relative max-w-md mx-auto w-full p-4 pb-24 flex flex-col">
+            <main className="flex-1 overflow-hidden relative max-w-md mx-auto w-full p-4 pb-4 flex flex-col">
                 {!currentPrayer ? (
                     <>
-                        <div id="prayersMenu" className="space-y-4 fade-in">
+                        <div id="prayersMenu" className="space-y-2 fade-in">
                             {prayerOptions.map(prayer => (
                                  <div key={prayer.id} onClick={() => openPrayer(prayer.id, `أذكار ${prayer.title}`)} 
-                                      className={`themed-card p-4 rounded-xl shadow-sm border-r-4 flex items-center justify-between cursor-pointer active:scale-95 transition`}
+                                      className={`themed-card p-3 rounded-xl shadow-sm border-r-4 flex items-center justify-between cursor-pointer active:scale-95 transition`}
                                       style={{ borderRightColor: prayer.color === 'primary' ? theme.palette[0] : theme.palette[1] }}>
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center`} style={{backgroundColor: prayer.color === 'primary' ? theme.palette[0]+'20' : theme.palette[1]+'20', color: prayer.color === 'primary' ? theme.palette[0] : theme.palette[1]}}>
-                                            <i className={`fa-solid ${prayer.icon} text-xl`}></i>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center`} style={{backgroundColor: prayer.color === 'primary' ? theme.palette[0]+'20' : theme.palette[1]+'20', color: prayer.color === 'primary' ? theme.palette[0] : theme.palette[1]}}>
+                                            <i className={`fa-solid ${prayer.icon} text-lg`}></i>
                                         </div>
                                         <div>
-                                            <h2 className="font-bold text-lg">{prayer.title}</h2>
+                                            <h2 className="font-bold text-base">{prayer.title}</h2>
                                         </div>
                                     </div>
                                     <i className="fa-solid fa-angle-left themed-text-muted"></i>
                                 </div>
                             ))}
                         </div>
-                        <div className="mt-auto pt-6">
+                        <div className="pt-2">
                             <div 
-                                className="themed-card p-4 rounded-xl text-center border-t-4"
+                                className="themed-card p-3 rounded-xl text-center border-t-4 relative"
                                 style={{ borderColor: theme.palette[0] }}
                             >
                                 <h3 className="font-bold text-sm mb-2" style={{ color: theme.palette[1] }}>
@@ -113,11 +122,14 @@ function AthkarAlSalah({ onBack }) {
                                 <p className="text-left text-[10px] themed-text-muted mt-2 opacity-70">
                                     - رواه مسلم
                                 </p>
+                                <button onClick={() => setZoomedText({title: 'فضل الذكر دبر الصلوات', text: 'عن أبي هريرة رضي الله عنه، أن رسول الله ﷺ قال: "مَنْ سَبَّحَ اللَّهَ فِي دُبُرِ كُلِّ صَلَاةٍ ثَلَاثًا وَثَلَاثِينَ، وَحَمِدَ اللَّهَ ثَلَاثًا وَثَلَاثِينَ، وَكَبَّرَ اللَّهَ ثَلَاثًا وَثَلَاثِينَ، فَتِلْكَ تِسْعَةٌ وَتِسْعُونَ، وَقَالَ تَمَامَ الْمِائَةِ: لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، غُفِرَتْ خَطَايَاهُ وَإِنْ كَانَتْ مِثْلَ زَبَدِ الْبَحْرِ".'})} className="absolute bottom-2 left-2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                    <i className="fa-solid fa-magnifying-glass-plus text-sm"></i>
+                                </button>
                             </div>
                         </div>
                     </>
                 ) : (
-                    <div id="athkarDetails" className="fade-in space-y-4">
+                    <div id="athkarDetails" className="fade-in space-y-4 overflow-y-auto hide-scrollbar">
                         {athkarList.map(zikr => {
                             const isFinished = zikr.currentCount === 0;
                             const textClass = zikr.isQuran ? 'font-amiri text-2xl text-center leading-relaxed' : 'text-lg leading-loose font-medium';
@@ -141,7 +153,21 @@ function AthkarAlSalah({ onBack }) {
                 )}
             </main>
 
-            <BottomBar onHomeClick={onBack} onThemesClick={() => {}} showThemes={false} />
+            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
+
+            {zoomedText && (
+                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4" onClick={() => setZoomedText(null)}>
+                    <div className="themed-card p-6 rounded-2xl w-full max-w-2xl text-center relative" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="font-bold text-lg mb-4" style={{ color: theme.palette[0] }}>{zoomedText.title}</h3>
+                        <p className="text-2xl md:text-3xl leading-relaxed font-amiri">
+                            {zoomedText.text}
+                        </p>
+                        <button onClick={() => setZoomedText(null)} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                            <i className="fa-solid fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

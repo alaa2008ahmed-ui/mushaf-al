@@ -7,8 +7,17 @@ import { hesnDoors } from '../data/hisnAlmuslimData';
 function HisnAlmuslim({ onBack }) {
     const { theme } = useTheme();
     const [currentDoorId, setCurrentDoorId] = useState(null);
+    const [zoomedItem, setZoomedItem] = useState(null);
 
     const door = hesnDoors.find(d => d.id === currentDoorId);
+
+    const openZoomModal = (item) => {
+        setZoomedItem(item);
+    };
+
+    const closeZoomModal = () => {
+        setZoomedItem(null);
+    };
 
     const DoorsScreen = () => (
         <div className="p-4 space-y-3">
@@ -52,6 +61,11 @@ function HisnAlmuslim({ onBack }) {
                             </div>
                             <p className="text-xl leading-relaxed text-center font-amiri select-none">{item.text}</p>
                             {item.source && <p className="text-xs mt-2 text-center themed-text-muted opacity-80">المصدر: {item.source}</p>}
+                            <div className="flex justify-center mt-3">
+                                <button onClick={() => openZoomModal(item)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                    <i className="fa-solid fa-magnifying-glass-plus text-lg"></i>
+                                </button>
+                            </div>
                         </div>
                     );
                 })}
@@ -59,6 +73,14 @@ function HisnAlmuslim({ onBack }) {
         );
     };
 
+
+    const handleHomeClick = () => {
+        if (currentDoorId) {
+            setCurrentDoorId(null);
+        } else {
+            onBack();
+        }
+    };
 
     return (
         <div className="h-screen flex flex-col overflow-hidden">
@@ -72,7 +94,7 @@ function HisnAlmuslim({ onBack }) {
                             </button>
                         )}
                         <h1 className="app-top-bar__title text-xl sm:text-2xl font-kufi flex items-center gap-2 justify-center">
-                             <i className="fa-solid fa-shield-heart"></i> {door ? door.title : 'حصن المسلم'}
+                             {door ? door.title : 'حصن المسلم'}
                         </h1>
                     </div>
                     <p className="app-top-bar__subtitle">
@@ -85,7 +107,21 @@ function HisnAlmuslim({ onBack }) {
                 {currentDoorId ? <DoorDetailScreen /> : <DoorsScreen />}
             </main>
 
-            <BottomBar onHomeClick={onBack} onThemesClick={() => {}} showThemes={false} />
+            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
+
+            {zoomedItem && (
+                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4">
+                    <div className="themed-card p-6 rounded-2xl w-full max-w-2xl text-center relative">
+                        <p className="text-4xl md:text-5xl leading-relaxed font-amiri">
+                            {zoomedItem.text}
+                        </p>
+                        {zoomedItem.source && <p className="text-lg mt-4 themed-text-muted opacity-80">المصدر: {zoomedItem.source}</p>}
+                        <button onClick={closeZoomModal} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                            <i className="fa-solid fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

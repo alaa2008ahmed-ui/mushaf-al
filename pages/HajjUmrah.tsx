@@ -9,9 +9,10 @@ interface DuaaSectionProps {
     items: string[];
     isOpen: boolean;
     onToggle: () => void;
+    onZoom: (item: string) => void;
 }
 
-const DuaaSection: FC<DuaaSectionProps> = ({ title, items, isOpen, onToggle }) => (
+const DuaaSection: FC<DuaaSectionProps> = ({ title, items, isOpen, onToggle, onZoom }) => (
     <div>
         <h4 onClick={onToggle} className="font-bold themed-text mb-1 cursor-pointer flex justify-between items-center text-base">
             <span>{title}</span>
@@ -19,7 +20,14 @@ const DuaaSection: FC<DuaaSectionProps> = ({ title, items, isOpen, onToggle }) =
         </h4>
         {isOpen && (
              <ul className="list-disc pr-4 space-y-1.5 mt-2 themed-text text-sm md:text-base">
-                {items.map((item, index) => <li key={index} dangerouslySetInnerHTML={{ __html: item }}></li>)}
+                {items.map((item, index) => (
+                    <li key={index} className="flex items-center justify-between">
+                        <span dangerouslySetInnerHTML={{ __html: item }}></span>
+                        <button onClick={() => onZoom(item)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                            <i className="fa-solid fa-magnifying-glass-plus text-lg"></i>
+                        </button>
+                    </li>
+                ))}
             </ul>
         )}
     </div>
@@ -30,9 +38,18 @@ function HajjUmrah({ onBack }) {
     const [screen, setScreen] = useState('home');
     const [hajjType, setHajjType] = useState('tamattu');
     const [openDuaaId, setOpenDuaaId] = useState<number | null>(null);
+    const [zoomedDuaa, setZoomedDuaa] = useState(null);
 
     const handleDuaaToggle = (id: number) => {
         setOpenDuaaId(prevId => (prevId === id ? null : id));
+    };
+
+    const openZoomModal = (item) => {
+        setZoomedDuaa({ text: item });
+    };
+
+    const closeZoomModal = () => {
+        setZoomedDuaa(null);
     };
     
     useEffect(() => {
@@ -45,12 +62,12 @@ function HajjUmrah({ onBack }) {
         switch (screen) {
             case 'umrah': return <UmrahScreen theme={theme} />;
             case 'hajj': return <HajjScreen hajjType={hajjType} setHajjType={setHajjType} theme={theme} />;
-            case 'duaa': return <DuaaScreen openDuaaId={openDuaaId} onToggle={handleDuaaToggle} />;
+            case 'duaa': return <DuaaScreen openDuaaId={openDuaaId} onToggle={handleDuaaToggle} onZoom={openZoomModal} />;
             default: return <HomeScreen setScreen={setScreen} theme={theme} />;
         }
     };
 
-    const handleBack = () => {
+    const handleHomeClick = () => {
         if (screen !== 'home') {
             setScreen('home');
         } else {
@@ -79,7 +96,18 @@ function HajjUmrah({ onBack }) {
                 {renderScreen()}
             </main>
 
-            <BottomBar onHomeClick={handleBack} onThemesClick={() => {}} showThemes={false} />
+            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
+
+            {zoomedDuaa && (
+                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4">
+                    <div className="themed-card p-6 rounded-2xl w-full max-w-2xl text-center relative">
+                        <p className="text-4xl md:text-5xl leading-relaxed font-amiri" dangerouslySetInnerHTML={{ __html: zoomedDuaa.text }}></p>
+                        <button onClick={closeZoomModal} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                            <i className="fa-solid fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -220,7 +248,7 @@ const HajjScreen = ({ hajjType, setHajjType, theme }) => (
     </section>
 );
 
-const DuaaScreen = ({ openDuaaId, onToggle }) => {
+const DuaaScreen = ({ openDuaaId, onToggle, onZoom }) => {
     return (
         <section id="duaa-screen" className="space-y-4">
              <div className="themed-card rounded-2xl p-4 leading-relaxed space-y-3">
@@ -231,6 +259,7 @@ const DuaaScreen = ({ openDuaaId, onToggle }) => {
                         items={section.items} 
                         isOpen={openDuaaId === section.id}
                         onToggle={() => onToggle(section.id)}
+                        onZoom={onZoom}
                     />
                 ))}
             </div>

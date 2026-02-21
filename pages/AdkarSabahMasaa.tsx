@@ -12,6 +12,7 @@ function AdkarSabahMasaa({ onBack }) {
     const { theme } = useTheme();
     const [adhkarTab, setAdhkarTab] = useState('morning');
     const [adhkarCounts, setAdhkarCounts] = useState({});
+    const [zoomedDhikr, setZoomedDhikr] = useState(null);
 
     useEffect(() => {
         const today = new Date().toISOString().split('T')[0];
@@ -39,6 +40,7 @@ function AdkarSabahMasaa({ onBack }) {
     }, []);
 
     const handleDecrement = (index) => {
+        if (zoomedDhikr) return; // Prevent decrementing when zoomed
         const currentTabCounts = adhkarCounts[adhkarTab];
         if (!currentTabCounts || currentTabCounts[index] === 0) {
             return;
@@ -64,6 +66,14 @@ function AdkarSabahMasaa({ onBack }) {
     };
     
     const currentAdhkar = adhkarTab === 'morning' ? BASE_ADHKAR_MORNING : BASE_ADHKAR_EVENING;
+
+    const openZoomModal = (dhikr) => {
+        setZoomedDhikr(dhikr);
+    };
+
+    const closeZoomModal = () => {
+        setZoomedDhikr(null);
+    };
 
     return (
         <div className="h-screen flex flex-col">
@@ -102,6 +112,11 @@ function AdkarSabahMasaa({ onBack }) {
                                 </p>
                                 
                                 {dhikr.source && <p className="text-xs mt-2 text-center themed-text-muted opacity-80 font-cairo">{dhikr.source}</p>}
+                                <div className="flex justify-center mt-3">
+                                    <button onClick={(e) => { e.stopPropagation(); openZoomModal(dhikr); }} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                        <i className="fa-solid fa-magnifying-glass-plus text-lg"></i>
+                                    </button>
+                                </div>
                                 
                                 {!isFinished && <div className="absolute inset-0 opacity-0 group-active:opacity-100 transition pointer-events-none" style={{backgroundColor: theme.palette[0]+'15'}}></div>}
                                 {!isFinished && <p className="text-xs text-center themed-text-muted mt-4 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للتسبيح</p>}
@@ -112,6 +127,20 @@ function AdkarSabahMasaa({ onBack }) {
             </main>
             
             <BottomBar onHomeClick={onBack} onThemesClick={() => {}} showThemes={false} />
+
+            {zoomedDhikr && (
+                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4">
+                    <div className="themed-card p-6 rounded-2xl w-full max-w-2xl text-center relative">
+                        <p className="text-4xl md:text-5xl leading-relaxed font-amiri">
+                            {zoomedDhikr.text}
+                        </p>
+                        {zoomedDhikr.source && <p className="text-lg mt-4 themed-text-muted opacity-80">{zoomedDhikr.source}</p>}
+                        <button onClick={closeZoomModal} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                            <i className="fa-solid fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
