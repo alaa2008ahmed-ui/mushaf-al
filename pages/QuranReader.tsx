@@ -158,42 +158,32 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
 
     // Keep screen awake logic
     useEffect(() => {
-        const enableKeepAwake = async () => {
+        let wakeLock: any = null;
+
+        const requestWakeLock = async () => {
+            // 1. Try Capacitor KeepAwake (for APK)
             try {
                 await KeepAwake.keepAwake();
             } catch (e) {
-                console.warn('Capacitor KeepAwake failed:', e);
+                // Not in Capacitor or failed
             }
 
+            // 2. Try Web Screen Wake Lock API (Fallback/Web)
             if ('wakeLock' in navigator) {
                 try {
-                    const wakeLock = await (navigator as any).wakeLock.request('screen');
-                    // Store wakeLock to release it later if needed
-                    // For simplicity, we'll rely on the return cleanup for now
+                    wakeLock = await (navigator as any).wakeLock.request('screen');
                 } catch (err) {
-                    console.warn('Web Wake Lock request failed:', err);
+                    console.warn('Wake Lock request failed:', err);
                 }
             }
         };
 
-        const disableKeepAwake = async () => {
-            try {
-                await KeepAwake.allowSleep();
-            } catch (e) {
-                console.warn('Capacitor allowSleep failed:', e);
-            }
-            // Web Wake Lock is automatically released when the tab is closed or navigated away
-            // or when the component unmounts if the wakeLock object is properly managed.
-        };
-
-        enableKeepAwake();
+        requestWakeLock();
 
         // Re-request wake lock when page becomes visible again
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                enableKeepAwake();
-            } else {
-                disableKeepAwake();
+                requestWakeLock();
             }
         };
 
@@ -201,7 +191,10 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
 
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
-            disableKeepAwake();
+            KeepAwake.allowSleep().catch(() => {});
+            if (wakeLock) {
+                wakeLock.release().catch(() => {});
+            }
         };
     }, []);
 
@@ -237,10 +230,7 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
 
     useEffect(() => {
         if (isPlaying || isAudioLoading) {
-            const ayahToPlay = highlightedAyahId 
-                ? { s: parseInt(highlightedAyahId.split('-')[1]), a: parseInt(highlightedAyahId.split('-')[2]) } 
-                : currentAyah;
-            playAudio(ayahToPlay.s, ayahToPlay.a);
+            playAudio(currentAyah.s, currentAyah.a);
         }
     }, [settings.reader]);
     
@@ -465,19 +455,10 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
     }, [tafseerInfo.isOpen, tafseerInfo.s, tafseerInfo.a, settings.tafseer]);
 
     const toggleAudio = useCallback(() => {
-        if (isPlaying || isAudioLoading) {
-            stopAudio();
-        } else {
-            const ayahToPlay = highlightedAyahId 
-                ? { s: parseInt(highlightedAyahId.split('-')[1]), a: parseInt(highlightedAyahId.split('-')[2]) } 
-                : currentAyah;
-            if (ayahToPlay) {
-                playAudio(ayahToPlay.s, ayahToPlay.a);
-            } else {
-                showToast('الرجاء اختيار آية للبدء');
-            }
-        }
-    }, [isPlaying, isAudioLoading, highlightedAyahId, currentAyah, playAudio, stopAudio, showToast]);
+        if (isPlaying || isAudioLoading) stopAudio();
+        else if (currentAyah) playAudio(currentAyah.s, currentAyah.a);
+        else showToast('الرجاء اختيار آية للبدء');
+    }, [isPlaying, isAudioLoading, currentAyah, playAudio, stopAudio]);
 
     useEffect(() => {
         const handleThemeChange = () => {
@@ -642,14 +623,16 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
         const ayah = surah?.ayahs.find((ay:any) => ay.numberInSurah === a);
         if (!ayah) return;
         const p = Number(ayah.page);
-        setVisiblePages([p]);
+        setVisiblePages([...new Set([p, p + 1, p + 2, p - 1, p - 2])].filter(n => n > 0 && n <= 604).sort((a: number, b: number) => a - b));
         setTimeout(() => {
             const el = document.getElementById(`ayah-${s}-${a}`);
             if (el) {
                 el.scrollIntoView({ block: 'center', behavior: instant ? 'auto' : 'smooth' });
                 handleAyahClick(s, a);
+            } else {
+                handleAyahClick(s, a);
             }
-        }, 50);
+        }, 100);
         setActiveModals({});
     }, [quranData, handleAyahClick, stopAudio]);
 
@@ -803,215 +786,93 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
     const page = quranData?.surahs[currentAyah.s - 1]?.ayahs.find((ay:any) => ay.numberInSurah === currentAyah.a)?.page || 1;
     const tafseerName = TAFSEERS.find(t => t.id === settings.tafseer)?.name || 'التفسير';
 
+    const renderPlayButtonIcon = () => {
+        if (isAudioLoading) return <span className="text-emerald-500 font-bold animate-pulse text-xs">جاري..</span>;
+        if (isPlaying) return <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>;
+        return <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>;
+    };
+
     return (
-        <div
-            className="quran-reader-container"
-            style={{
-                fontSize: `${settings.fontSize}rem`,
-                fontFamily: settings.fontFamily,
-                backgroundColor: settings.bgColor,
-                color: settings.textColor,
-            }}
-        >
-            {/* Top Toolbar */}
-            <div
-                className={`top-toolbar fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 border-b shadow-sm transition-all duration-300 ${hideUIOnScroll ? '-translate-y-full' : 'translate-y-0'}`}
-                style={getToolbarStyle('top-toolbar', currentTheme.headerBg, currentTheme.headerText, currentTheme.headerBorder)}
-            >
-                <button onClick={onBack} className="toolbar-btn">
-                    <i className="fa-solid fa-arrow-right text-lg"></i>
-                </button>
-                <div className="flex flex-col items-center flex-grow mx-2">
-                    <span className="text-sm font-bold">{surahName}</span>
-                    <span className="text-xs opacity-80">الجزء {toArabic(juz)} - صفحة {toArabic(page)}</span>
-                </div>
-                <button onClick={() => openModal('search-modal')} className="toolbar-btn">
-                    <i className="fa-solid fa-search text-lg"></i>
-                </button>
-            </div>
-
-            {/* Mushaf Content */}
-            <div
-                ref={mushafContentRef}
-                className="mushaf-content overflow-y-auto hide-scrollbar pt-[80px] pb-[80px]"
-            >
-                {visiblePages.map(pageNum => (
-                    <MushafPage
-                        key={pageNum}
-                        pageNum={pageNum}
-                        pageData={getPageData(pageNum)}
-                        highlightedAyahId={highlightedAyahId}
-                        onAyahClick={handleAyahClick}
-                        onVerseClick={handleVerseClick}
-                        settings={settings}
-                        currentTheme={currentTheme}
-                        showSajdahNotification={handleSajdahVisible}
+        <div className={`quran-reader-container ${autoScrollState.isActive && !autoScrollState.isPaused && hideUIOnScroll ? 'fullscreen-active' : ''}`} id="app-container" style={{ backgroundColor: settings.bgColor, color: settings.textColor, fontFamily: settings.fontFamily, position: 'relative', height: '100dvh', overflow: 'hidden' } as React.CSSProperties}>
+            <header id="header" className="header-default flex-none z-50 flex items-center px-4 justify-between border-b shadow-xl w-full gap-2" style={getToolbarStyle('top-toolbar', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>
+                <button id="surah-name-header" onClick={() => openModal('surah-modal')} className="top-bar-text-button" style={getToolbarStyle('surah', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}><span>{surahName} - آية {toArabic(currentAyah.a)}</span></button>
+                <button id="juz-number-header" onClick={() => openModal('juz-modal')} className="top-bar-text-button" style={getToolbarStyle('juz', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>الجزء {toArabic(juz)}</button>
+                {isPageInputActive ? (
+                    <input
+                        ref={pageInputRef}
+                        id="header-page"
+                        type="tel"
+                        value={pageInput}
+                        onChange={handlePageInputChange}
+                        onBlur={handlePageInputBlur}
+                        className="top-bar-text-button"
+                        style={getToolbarStyle('page', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}
+                        placeholder={`ص ${toArabic(page)}`}
                     />
-                ))}
-            </div>
-
-            {/* Floating Action Button */}
-            <button
-                ref={menuButtonRef}
-                onClick={() => setIsFloatingMenuOpen(p => !p)}
-                className="fixed bottom-20 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full shadow-lg flex items-center justify-center z-10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
-                style={{ backgroundColor: currentTheme.accent, color: currentTheme.accentText, borderColor: currentTheme.accent, boxShadow: `0 4px 10px ${currentTheme.accent}80` }}
-            >
-                <i className={`fa-solid ${isFloatingMenuOpen ? 'fa-times' : 'fa-bars'} text-xl`}></i>
-            </button>
-
-            {/* Floating Menu */}
-            <div
-                ref={floatingMenuRef}
-                className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 transition-all duration-300 ${isFloatingMenuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}
-                style={{ transformOrigin: 'bottom center', borderColor: currentTheme.border, border: '1px solid' }}
-            >
-                <div className="grid grid-cols-3 gap-3">
-                    <button onClick={() => openModal('surah-juz-modal')} className="floating-menu-btn">
-                        <i className="fa-solid fa-book-quran text-lg"></i>
-                        <span>السور والأجزاء</span>
+                ) : (
+                    <button 
+                        id="header-page" 
+                        onClick={handlePageButtonClick}
+                        className="top-bar-text-button" 
+                        style={getToolbarStyle('page', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}
+                    >
+                        ص {toArabic(page)}
                     </button>
-                    <button onClick={() => openModal('bookmarks-modal')} className="floating-menu-btn">
-                        <i className="fa-solid fa-bookmark text-lg"></i>
-                        <span>العلامات</span>
-                    </button>
-                    <button onClick={() => openModal('settings-modal')} className="floating-menu-btn">
-                        <i className="fa-solid fa-cog text-lg"></i>
-                        <span>الإعدادات</span>
-                    </button>
-                    <button onClick={() => openModal('themes-modal')} className="floating-menu-btn">
-                        <i className="fa-solid fa-palette text-lg"></i>
-                        <span>السمات</span>
-                    </button>
-                    <button onClick={() => openModal('download-quran-modal')} className="floating-menu-btn">
-                        <i className="fa-solid fa-download text-lg"></i>
-                        <span>تحميل القرآن</span>
-                    </button>
-                    <button onClick={() => openModal('download-tafsir-modal')} className="floating-menu-btn">
-                        <i className="fa-solid fa-cloud-download-alt text-lg"></i>
-                        <span>تحميل التفسير</span>
-                    </button>
-                    <button onClick={() => openModal('toolbar-color-picker-modal')} className="floating-menu-btn">
-                        <i className="fa-solid fa-fill-drip text-lg"></i>
-                        <span>ألوان الشريط</span>
-                    </button>
-                    <button onClick={toggleAudio} className="floating-menu-btn">
-                        <i className={`fa-solid ${isPlaying || isAudioLoading ? 'fa-pause' : 'fa-play'} text-lg`}></i>
-                        <span>{isPlaying ? 'إيقاف الصوت' : 'تشغيل الصوت'}</span>
-                    </button>
-                    <button onClick={toggleAutoScroll} className="floating-menu-btn">
-                        <i className={`fa-solid ${autoScrollState.isActive ? 'fa-pause-circle' : 'fa-play-circle'} text-lg`}></i>
-                        <span>{autoScrollState.isActive ? 'إيقاف التمرير' : 'تمرير تلقائي'}</span>
-                    </button>
+                )}
+                <button id="btn-play" onClick={toggleAudio} className="top-bar-text-button" style={getToolbarStyle('audio', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}><span id="play-icon-svg">{renderPlayButtonIcon()}</span></button>
+            </header>
+            <ReadingTimer isVisible={autoScrollState.isPaused || (!autoScrollState.isActive && autoScrollState.elapsedTime > 0)} elapsedTime={autoScrollState.elapsedTime} />
+            <div id="mushaf-content" ref={mushafContentRef} onClick={pauseResumeAutoScroll} className="flex-grow overflow-y-auto w-full relative touch-pan-y" style={isTransparentMode ? { position: 'absolute', top: 0, bottom: 0, height: '100%', zIndex: 0, paddingTop: '80px', paddingBottom: '80px' } : {}}>
+                <div id="pages-container" className="full-mushaf-container">
+                   {[...new Set(visiblePages)].sort((a: number, b: number) => a - b).map(pageNum => (<MushafPage key={pageNum} pageNum={pageNum} pageData={getPageData(pageNum)} highlightedAyahId={highlightedAyahId} onAyahClick={handleAyahClick} onVerseClick={handleVerseClick} settings={settings} />))}
                 </div>
             </div>
-
-            {/* Bottom Toolbar */}
-            <div
-                className={`bottom-toolbar fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between p-3 border-t shadow-sm transition-all duration-300 ${hideUIOnScroll ? 'translate-y-full' : 'translate-y-0'}`}
-                style={getToolbarStyle('bottom-toolbar', currentTheme.headerBg, currentTheme.headerText, currentTheme.headerBorder)}
-            >
-                <button onClick={() => jumpToPage(page - 1)} className="toolbar-btn">
-                    <i className="fa-solid fa-arrow-right text-lg"></i>
-                </button>
-                <div className="flex items-center gap-2">
-                    {isPageInputActive ? (
-                        <input
-                            ref={pageInputRef}
-                            type="number"
-                            value={pageInput}
-                            onChange={handlePageInputChange}
-                            onBlur={handlePageInputBlur}
-                            className="w-16 text-center bg-transparent border-b-2 border-current focus:outline-none"
-                            style={{ color: currentTheme.headerText }}
-                            placeholder={toArabic(page)}
-                        />
-                    ) : (
-                        <button onClick={handlePageButtonClick} className="toolbar-btn">
-                            <span className="text-sm">صفحة {toArabic(page)}</span>
-                        </button>
-                    )}
-                </div>
-                <button onClick={() => jumpToPage(page + 1)} className="toolbar-btn">
-                    <i className="fa-solid fa-arrow-left text-lg"></i>
-                </button>
+            <SajdahNotification isVisible={sajdahInfo.show} surah={sajdahInfo.surah} ayah={sajdahInfo.ayah} />
+            <div id="floating-menu" className={isFloatingMenuOpen ? 'open' : ''} ref={floatingMenuRef}>
+                 <button onClick={() => { openModal('bookmarks-modal'); setIsFloatingMenuOpen(false); }} className="bottom-bar-button btn-green w-full justify-between mb-2" style={getToolbarStyle('btn-bookmarks-list', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBg)}><span>قائمة الإشارات</span><i className="fa-solid fa-list"></i></button>
+                 <button onClick={() => { openModal('search-modal'); setIsFloatingMenuOpen(false); }} className="bottom-bar-button btn-purple w-full justify-between mb-2" style={getToolbarStyle('btn-search', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBg)}><span>البحث</span><i className="fa-solid fa-search"></i></button>
+                 <button onClick={() => { openModal('themes-modal'); setIsFloatingMenuOpen(false); }} className="bottom-bar-button btn-green w-full justify-between mb-2" style={getToolbarStyle('btn-themes', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBg)}><span>الثيمات</span><i className="fa-solid fa-palette"></i></button>
+                 <button onClick={() => { openModal('settings-modal'); setIsFloatingMenuOpen(false); }} className="bottom-bar-button btn-purple w-full justify-between" style={getToolbarStyle('btn-settings', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBg)}><span>الإعدادات</span><i className="fa-solid fa-cog"></i></button>
             </div>
-
-            {/* Modals */}
-            <SearchModal
-                isOpen={activeModals['search-modal']}
-                onClose={() => closeModal('search-modal')}
-                onSelectAyah={jumpToAyah}
-                quranData={quranData}
-                currentTheme={currentTheme}
-            />
-            <ThemesModal
-                isOpen={activeModals['themes-modal']}
-                onClose={() => closeModal('themes-modal')}
-                currentTheme={currentTheme}
-                setCurrentTheme={setCurrentTheme}
-            />
-            <SettingsModal
-                isOpen={activeModals['settings-modal']}
-                onClose={() => closeModal('settings-modal')}
-                settings={settings}
-                setSettings={setSettings}
-                currentTheme={currentTheme}
-            />
-            <ToolbarColorPickerModal
-                isOpen={activeModals['toolbar-color-picker-modal']}
-                onClose={() => closeModal('toolbar-color-picker-modal')}
-                toolbarColors={toolbarColors}
-                setToolbarColors={setToolbarColors}
-                isTransparentMode={isTransparentMode}
-                setIsTransparentMode={setIsTransparentMode}
-                currentTheme={currentTheme}
-            />
-            <QuranDownloadModal
-                isOpen={activeModals['download-quran-modal']}
-                onClose={() => closeModal('download-quran-modal')}
-                quranData={quranData}
-                showToast={showToast}
-            />
-            <TafsirDownloadModal
-                isOpen={activeModals['download-tafsir-modal']}
-                onClose={() => closeModal('download-tafsir-modal')}
-                tafseers={TAFSEERS}
-                showToast={showToast}
-            />
-            <SurahJuzModal
-                isOpen={activeModals['surah-juz-modal']}
-                onClose={() => closeModal('surah-juz-modal')}
-                quranData={quranData}
-                onSelectAyah={jumpToAyah}
-            />
-            <BookmarksModal
-                isOpen={activeModals['bookmarks-modal']}
-                onClose={() => closeModal('bookmarks-modal')}
-                bookmarks={bookmarks}
-                onDeleteBookmark={deleteBookmark}
-                onSelectAyah={jumpToAyah}
-            />
-            <Toast
-                show={toast.show}
-                message={toast.message}
-                onClose={handleToastClose}
-            />
-            <SajdahCardModal
-                info={sajdahCardInfo}
-                onClose={handleCloseSajdahCard}
-            />
-            <TafseerModal
-                isOpen={tafseerInfo.isOpen}
-                onClose={() => setTafseerInfo(prev => ({ ...prev, isOpen: false }))}
-                tafseerText={tafseerInfo.text}
-                surahName={tafseerInfo.surahName}
-                ayahNum={tafseerInfo.a}
-                isLoading={isTafseerLoading}
-                tafseerName={tafseerName}
-            />
+            <footer id="bottom-bar" className="footer-default flex-none border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-10 flex justify-around items-center px-1 py-2 w-full" style={getToolbarStyle('bottom-toolbar', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>
+                <button ref={menuButtonRef} id="btn-menu" onClick={() => setIsFloatingMenuOpen(p => !p)} className="bottom-bar-button btn-purple flex-1 mx-1 h-10" style={getToolbarStyle('btn-menu', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBg)}><i className="fa-solid fa-bars"></i><span className="hidden sm:inline">القائمة</span></button>
+                <button id="btn-bookmark" onClick={saveBookmark} className="bottom-bar-button btn-green flex-1 mx-1 h-10" style={getToolbarStyle('btn-bookmark', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBg)}><i className="fa-solid fa-bookmark"></i><span className="hidden sm:inline">حفظ</span></button>
+                <button id="btn-autoscroll" onClick={toggleAutoScroll} className={`bottom-bar-button btn-purple flex-1 mx-1 h-10 ${autoScrollState.isActive ? 'btn-autoscroll-active' : ''}`} style={getToolbarStyle('btn-autoscroll', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBg)}>
+                    {autoScrollState.isActive ? <i className="fa-solid fa-pause"></i> : <i className="fa-solid fa-arrow-down"></i>}
+                    <span className="hidden sm:inline">{autoScrollState.isActive ? "إيقاف" : "تمرير"}</span>
+                </button>
+                <button id="btn-home" onClick={onBack} className="bottom-bar-button btn-green flex-1 mx-1 h-10" style={getToolbarStyle('btn-home', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBg)}><i className="fa-solid fa-home"></i><span className="hidden sm:inline">الرئيسية</span></button>
+            </footer>
+            {activeModals['surah-modal'] && <SurahJuzModal type="surah" quranData={quranData} onSelect={(s, a) => { closeModal('surah-modal'); setTimeout(() => jumpToAyah(s, a), 0); }} onClose={() => closeModal('surah-modal')} />}
+            {activeModals['juz-modal'] && <SurahJuzModal type="juz" quranData={quranData} onSelect={(j: number) => { closeModal('juz-modal'); setTimeout(() => jumpToAyah(JUZ_MAP[j - 1].s, JUZ_MAP[j - 1].a), 0); }} onClose={() => closeModal('juz-modal')} />}
+            {activeModals['bookmarks-modal'] && <BookmarksModal bookmarks={bookmarks} quranData={quranData} onSelect={(s,a) => jumpToAyah(s,a)} onDelete={deleteBookmark} onClose={() => closeModal('bookmarks-modal')} />}
+            {activeModals['search-modal'] && <SearchModal quranData={quranData} onSelect={(s,a) => jumpToAyah(s,a)} onClose={() => closeModal('search-modal')} />}
+            {activeModals['themes-modal'] && <ThemesModal onClose={() => closeModal('themes-modal')} showToast={showToast} />}
+            {activeModals['settings-modal'] && <SettingsModal onClose={() => closeModal('settings-modal')} onOpenModal={openModal} showToast={showToast} />}
+            {activeModals['toolbar-color-picker-modal'] && <ToolbarColorPickerModal onClose={() => closeModal('toolbar-color-picker-modal')} onOpenModal={openModal} showToast={showToast} currentTheme={currentTheme} toolbarColors={toolbarColors} />}
+            {activeModals['quran-download-modal'] && <QuranDownloadModal onClose={() => closeModal('quran-download-modal')} quranData={quranData} showToast={showToast} />}
+            {activeModals['tafsir-download-modal'] && <TafsirDownloadModal onClose={() => closeModal('tafsir-download-modal')} quranData={quranData} showToast={showToast} />}
+            <TafseerModal isOpen={tafseerInfo.isOpen} isLoading={isTafseerLoading} title={`${tafseerName} - ${tafseerInfo.surahName.replace('سورة','').trim()} - آية ${toArabic(tafseerInfo.a)}`} text={tafseerInfo.text} onClose={() => setTafseerInfo(p => ({ ...p, isOpen: false }))} />
+            <SajdahCardModal info={sajdahCardInfo} onClose={handleCloseSajdahCard} />
+            <Toast message={toast.message} show={toast.show} onClose={handleToastClose} />
         </div>
     );
 };
+
+const ReadingTimer: FC<{isVisible: boolean, elapsedTime: number}> = ({isVisible, elapsedTime}) => {
+    const minutes = Math.floor(Number(elapsedTime) / 60).toString().padStart(2, '0');
+    const seconds = (Number(elapsedTime) % 60).toString().padStart(2, '0');
+    return (<div className={`reading-timer ${isVisible ? 'show' : ''}`}>{toArabic(`${minutes}:${seconds}`)}</div>);
+};
+
+const SajdahNotification: FC<{isVisible: boolean, surah?: string, ayah?: number}> = ({isVisible, surah, ayah}) => (
+    <div className={`sajdah-notification ${isVisible ? 'show' : ''}`}>
+        <div className="p-2 rounded-full"><i className="fa-solid fa-mosque"></i></div>
+        <div>
+            <div className="font-bold text-sm">سجدة تلاوة</div>
+            <div className="text-xs mt-0.5">سورة {surah} - آية {toArabic(ayah || '')}</div>
+        </div>
+    </div>
+);
 
 export default QuranReader;

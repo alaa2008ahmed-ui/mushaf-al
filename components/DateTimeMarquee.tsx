@@ -4,15 +4,21 @@ import { useTheme } from '../context/ThemeContext';
 const DateTimeMarquee: React.FC = () => {
     const { theme } = useTheme();
     const [currentDate, setCurrentDate] = useState(new Date());
-
+    const [isEnglish, setIsEnglish] = useState(false);
 
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentDate(new Date());
         }, 1000);
 
+        // Toggle language every 20 seconds
+        const toggle = setInterval(() => {
+            setIsEnglish(prev => !prev);
+        }, 20000);
+
         return () => {
             clearInterval(timer);
+            clearInterval(toggle);
         };
     }, []);
 
@@ -34,25 +40,30 @@ const DateTimeMarquee: React.FC = () => {
     const gregorianDateAr = new Intl.DateTimeFormat('ar-SA', gregorianFormatOptions).format(currentDate);
     const timeAr = currentDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const displayStringAr = `${hijriDateAr}  |  ${gregorianDateAr}  |  ${timeAr}`;
-;
+
+    // English formats
+    const hijriDateEn = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', hijriFormatOptions).format(currentDate);
+    const gregorianDateEn = new Intl.DateTimeFormat('en-US', gregorianFormatOptions).format(currentDate);
+    const timeEn = currentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    const displayStringEn = `${hijriDateEn}  |  ${gregorianDateEn}  |  ${timeEn}`;
 
     return (
         <>
             <style>
                 {`
                     @keyframes marquee-rtl-custom {
-                        0% { transform: translateX(-100%); }
-                        100% { transform: translateX(100%); }
+                        0% { transform: translateX(0); }
+                        100% { transform: translateX(-50%); }
                     }
                     @keyframes marquee-ltr-custom {
-                        0% { transform: translateX(100%); }
-                        100% { transform: translateX(-100%); }
+                        0% { transform: translateX(-50%); }
+                        100% { transform: translateX(0); }
                     }
                     .animate-marquee-rtl-custom {
-                        animation: marquee-rtl-custom 40s linear infinite;
+                        animation: marquee-rtl-custom 20s linear infinite;
                     }
                     .animate-marquee-ltr-custom {
-                        animation: marquee-ltr-custom 40s linear infinite;
+                        animation: marquee-ltr-custom 20s linear infinite;
                     }
                     .luminous-bar {
                         box-shadow: 0 0 15px rgba(0,0,0,0.5), inset 0 0 10px rgba(255,255,255,0.05);
@@ -67,13 +78,13 @@ const DateTimeMarquee: React.FC = () => {
                 }}
             >
                 <div 
-                    className={`flex w-fit transition-opacity duration-1000 animate-marquee-rtl-custom`}
-                    dir={'rtl'}
+                    className={`flex w-fit transition-opacity duration-1000 ${isEnglish ? 'animate-marquee-rtl-custom' : 'animate-marquee-ltr-custom'}`}
+                    dir={isEnglish ? 'rtl' : 'ltr'}
                 >
-                    <span className="px-6 flex-shrink-0">{displayStringAr}</span>
-                    <span className="px-6 flex-shrink-0">{displayStringAr}</span>
-                    <span className="px-6 flex-shrink-0">{displayStringAr}</span>
-                    <span className="px-6 flex-shrink-0">{displayStringAr}</span>
+                    <span className="px-12 flex-shrink-0">{displayStringAr}</span>
+                    <span className="px-12 flex-shrink-0">{displayStringEn}</span>
+                    <span className="px-12 flex-shrink-0">{displayStringAr}</span>
+                    <span className="px-12 flex-shrink-0">{displayStringEn}</span>
                 </div>
             </div>
         </>

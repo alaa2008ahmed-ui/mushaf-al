@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import { gregorianMonths, hijriMonths } from '../data/calendarData';
-import { islamicEvents } from '../data/islamicEventsData'; // Import Islamic events
 
 const ARABIC_TO_ENGLISH_NUMERALS = { '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9' };
 
@@ -88,8 +87,6 @@ function HijriCalendar({ onBack }) {
         hDay: 1, hMonth: 1, hYear: '1445'
     });
 
-    const [currentEventIndex, setCurrentEventIndex] = useState(0);
-
     useEffect(() => {
         const date = new Date();
         const locale = 'ar-SA';
@@ -120,17 +117,6 @@ function HijriCalendar({ onBack }) {
             hDay: newDates.hijri.day, hMonth: newDates.hijri.monthId, hYear: String(newDates.hijri.year)
         });
 
-        // Set initial random event
-        setCurrentEventIndex(Math.floor(Math.random() * islamicEvents.length));
-
-    }, []);
-
-    useEffect(() => {
-        const eventTimer = setInterval(() => {
-            setCurrentEventIndex(prevIndex => (prevIndex + 1) % islamicEvents.length);
-        }, 10000); // Change event every 10 seconds
-
-        return () => clearInterval(eventTimer);
     }, []);
 
     const handleTabChange = (tab) => {
@@ -198,8 +184,6 @@ function HijriCalendar({ onBack }) {
     const gMonthsOpts = gregorianMonths.map(m => ({ value: m.id, label: m.name }));
     const hMonthsOpts = hijriMonths.map(m => ({ value: m.id, label: m.name }));
 
-    const currentEvent = islamicEvents[currentEventIndex];
-
     return (
         <div className={`h-screen flex flex-col`}>
             <header className="app-top-bar">
@@ -251,14 +235,6 @@ function HijriCalendar({ onBack }) {
                             <p className={`text-2xl sm:text-3xl leading-tight`} style={{color: theme.palette[0]}}>{result || '---'}</p>
                         </div>
                     </div>
-                </div>
-
-                {/* Islamic Event Display */}
-                <div className={`w-full max-w-lg p-4 rounded-2xl themed-card text-center mt-4 shrink-0 fade-in`}>
-                    <h3 className="font-bold text-lg mb-2" style={{ color: theme.palette[1] }}>حدث إسلامي اليوم</h3>
-                    <p className="text-xl font-extrabold mb-1" style={{ color: theme.palette[0] }}>{currentEvent.name}</p>
-                    <p className="text-sm themed-text-muted mb-2">{currentEvent.hijriDate}</p>
-                    <p className="text-sm leading-relaxed font-amiri themed-text-muted" dir="rtl">{currentEvent.description}</p>
                 </div>
             </main>
 
