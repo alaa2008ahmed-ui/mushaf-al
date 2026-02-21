@@ -130,25 +130,38 @@
 .dark .verse-num-inner { color: #f87171; }
 
 .surah-header { 
-    margin: 0 0 0.5rem; 
+    margin: 1rem 0 0.5rem; 
     display: flex; 
     justify-content: space-between; 
     align-items: center;
     border-bottom: 1px solid #10b981;
-    padding-bottom: 5px;
+    border-top: 1px solid #10b981;
+    padding: 12px 10px;
 }
-.surah-name { font-size: 1.6rem; color: #059669; font-weight: bold; margin-bottom: 0; display: block; font-family: var(--font-hafs) !important; flex: 1; text-align: center; }
+.surah-name { 
+    font-size: 1.8rem; 
+    color: #059669; 
+    font-weight: bold; 
+    margin: 0; 
+    display: block; 
+    font-family: var(--font-hafs) !important; 
+    flex-grow: 1; 
+    text-align: center; 
+    line-height: 1.2; 
+}
 .surah-info-right, .surah-info-left {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: #4b5563;
     font-family: var(--font-ui);
-    min-width: 60px;
+    min-width: 70px;
     font-weight: bold;
+    line-height: 1.2;
+    flex-shrink: 0;
 }
 .surah-info-right { text-align: right; }
 .surah-info-left { text-align: left; }
 .dark .surah-info-right, .dark .surah-info-left { color: #d1d5db; }
-.dark .surah-header { border-bottom-color: #34d399; }
+.dark .surah-header { border-bottom-color: #34d399; border-top-color: #34d399; }
 .dark .surah-name { color: #34d399; }
 
 .bismillah { 
