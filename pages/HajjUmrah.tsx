@@ -80,12 +80,7 @@ function HajjUmrah({ onBack }) {
             <header className="app-top-bar">
                 <div className="app-top-bar__inner gap-2">
                     <div className="relative flex items-center justify-center">
-                         {screen !== 'home' && (
-                            <button onClick={() => setScreen('home')} className="absolute right-0 top-1/2 -translate-y-1/2 transform inline-flex items-center gap-2 text-xs md:text-sm font-semibold bg-white/15 hover:bg-white/25 text-white px-3 py-1 rounded-full transition shadow-md">
-                                <span className="text-lg leading-none">◀</span>
-                                <span>العودة</span>
-                            </button>
-                        )}
+
                         <h1 className="app-top-bar__title text-2xl md:text-3xl font-kufi tracking-wide">الحج والعمرة</h1>
                     </div>
                     <p className="app-top-bar__subtitle">دليل مبسّط لمناسك الحج والعمرة مع خطوات وأذكار واضحة</p>
@@ -99,8 +94,8 @@ function HajjUmrah({ onBack }) {
             <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
 
             {zoomedDuaa && (
-                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4">
-                    <div className="themed-card p-6 rounded-2xl w-full max-w-2xl text-center relative">
+                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4" onClick={closeZoomModal}>
+                    <div className="themed-card p-6 rounded-2xl w-full max-w-2xl text-center relative" onClick={e => e.stopPropagation()}>
                         <p className="text-4xl md:text-5xl leading-relaxed font-amiri" dangerouslySetInnerHTML={{ __html: zoomedDuaa.text }}></p>
                         <button onClick={closeZoomModal} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                             <i className="fa-solid fa-times text-2xl"></i>

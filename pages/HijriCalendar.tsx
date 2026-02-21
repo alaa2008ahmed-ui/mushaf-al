@@ -87,7 +87,57 @@ function HijriCalendar({ onBack }) {
         hDay: 1, hMonth: 1, hYear: '1445'
     });
 
+    const [historicalEvent, setHistoricalEvent] = useState(null);
+
+    const historicalEvents = [
+        {
+            title: "غزوة بدر الكبرى",
+            hijriYear: "2 هـ",
+            gregorianYear: "624 م",
+            description: "أول معركة فاصلة في تاريخ الإسلام بين المسلمين بقيادة النبي ﷺ وقريش، انتهت بنصر مؤزر للمسلمين."
+        },
+        {
+            title: "فتح مكة",
+            hijriYear: "8 هـ",
+            gregorianYear: "630 م",
+            description: "دخول النبي ﷺ مكة فاتحاً دون قتال، وتحطيم الأصنام حول الكعبة، وإعلان العفو العام عن أهلها."
+        },
+        {
+            title: "معركة القادسية",
+            hijriYear: "15 هـ",
+            gregorianYear: "636 م",
+            description: "معركة كبرى بين المسلمين بقيادة سعد بن أبي وقاص والفرس، فتحت الطريق لانتشار الإسلام في بلاد فارس."
+        },
+        {
+            title: "فتح الأندلس",
+            hijriYear: "92 هـ",
+            gregorianYear: "711 م",
+            description: "بدء الفتح الإسلامي لشبه الجزيرة الأيبيرية بقيادة طارق بن زياد وموسى بن نصير، وبداية حضارة إسلامية دامت قروناً."
+        },
+        {
+            title: "معركة حطين",
+            hijriYear: "583 هـ",
+            gregorianYear: "1187 م",
+            description: "انتصار حاسم للمسلمين بقيادة صلاح الدين الأيوبي على الصليبيين، مما مهد الطريق لاستعادة بيت المقدس."
+        },
+        {
+            title: "فتح القسطنطينية",
+            hijriYear: "857 هـ",
+            gregorianYear: "1453 م",
+            description: "فتح المدينة العريقة على يد السلطان العثماني محمد الفاتح، وتحقيق بشارة النبي ﷺ."
+        },
+        {
+            title: "معركة عين جالوت",
+            hijriYear: "658 هـ",
+            gregorianYear: "1260 م",
+            description: "انتصار المسلمين بقيادة سيف الدين قطز والظاهر بيبرس على المغول، وحماية العالم الإسلامي من خطرهم."
+        }
+    ];
+
     useEffect(() => {
+        const randomIndex = Math.floor(Math.random() * historicalEvents.length);
+        setHistoricalEvent(historicalEvents[randomIndex]);
+        
         const date = new Date();
         const locale = 'ar-SA';
         const gDayOfWeek = new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(date);
@@ -210,7 +260,7 @@ function HijriCalendar({ onBack }) {
                     <button onClick={() => handleTabChange('gregorianToHijri')} className={`flex-1 py-2 sm:py-3 px-1 text-center rounded-lg font-bold transition-all ${activeTab === 'gregorianToHijri' ? `shadow-md text-white` : `themed-text-muted`}`} style={activeTab === 'gregorianToHijri' ? {backgroundColor: theme.palette[1]} : {}}>ميلادي إلى هجري</button>
                 </div>
 
-                <div className="w-full max-w-lg flex-1 flex flex-col justify-start overflow-hidden">
+                <div className="w-full max-w-lg flex flex-col justify-start">
                     <div className="space-y-3 sm:space-y-4">
                         {activeTab === 'gregorianToHijri' ? (
                             <div className="flex gap-2 input-section">
@@ -230,10 +280,31 @@ function HijriCalendar({ onBack }) {
                                 {activeTab === 'gregorianToHijri' ? "تحويل إلى هجري" : "تحويل إلى ميلادي"}
                             </button>
                         </div>
-                        <div className={`w-full p-4 sm:p-6 rounded-xl text-center font-extrabold themed-card min-h-[90px] flex flex-col justify-center`}>
+                        <div className={`w-full p-4 sm:p-6 rounded-xl text-center font-extrabold themed-card min-h-[90px] flex flex-col justify-center mb-6`}>
                             <p className={`text-xs themed-text-muted mb-1`}>{message}</p>
                             <p className={`text-2xl sm:text-3xl leading-tight`} style={{color: theme.palette[0]}}>{result || '---'}</p>
                         </div>
+
+                        {historicalEvent && (
+                            <div className="themed-card p-5 rounded-2xl border-r-4 shadow-lg fade-in mb-4" style={{ borderRightColor: theme.palette[1] }}>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: theme.palette[1] + '20', color: theme.palette[1] }}>
+                                        <i className="fa-solid fa-clock-rotate-left text-lg"></i>
+                                    </div>
+                                    <h3 className="font-bold text-lg" style={{ color: theme.palette[1] }}>حدث تاريخي عظيم</h3>
+                                </div>
+                                <div className="space-y-2">
+                                    <h4 className="text-xl font-extrabold" style={{ color: theme.palette[0] }}>{historicalEvent.title}</h4>
+                                    <div className="flex gap-4 text-sm font-bold themed-text-muted">
+                                        <span><i className="fa-solid fa-calendar-check ml-1"></i> {historicalEvent.hijriYear}</span>
+                                        <span><i className="fa-solid fa-calendar-day ml-1"></i> {historicalEvent.gregorianYear}</span>
+                                    </div>
+                                    <p className="text-sm leading-relaxed font-amiri themed-text-muted pt-2 border-t border-black/5 dark:border-white/5">
+                                        {historicalEvent.description}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>

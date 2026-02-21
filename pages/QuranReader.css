@@ -129,8 +129,26 @@
 .dark .verse-bracket { color: #34d399; }
 .dark .verse-num-inner { color: #f87171; }
 
-.surah-header { margin: 0 0 0.5rem; text-align: center; }
-.surah-name { font-size: 1.6rem; color: #059669; font-weight: bold; margin-bottom: 10px; display: block; font-family: var(--font-hafs) !important; }
+.surah-header { 
+    margin: 0 0 0.5rem; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    border-bottom: 1px solid #10b981;
+    padding-bottom: 5px;
+}
+.surah-name { font-size: 1.6rem; color: #059669; font-weight: bold; margin-bottom: 0; display: block; font-family: var(--font-hafs) !important; flex: 1; text-align: center; }
+.surah-info-right, .surah-info-left {
+    font-size: 0.95rem;
+    color: #4b5563;
+    font-family: var(--font-ui);
+    min-width: 60px;
+    font-weight: bold;
+}
+.surah-info-right { text-align: right; }
+.surah-info-left { text-align: left; }
+.dark .surah-info-right, .dark .surah-info-left { color: #d1d5db; }
+.dark .surah-header { border-bottom-color: #34d399; }
 .dark .surah-name { color: #34d399; }
 
 .bismillah { 

@@ -4,7 +4,7 @@ import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import WhatsAppButton from '../components/WhatsAppButton';
 import { verses, navItems } from '../data/mainMenuData';
-import DateTimeMarquee from '../components/DateTimeMarquee';
+
 
 const NavButton = ({ label, onClick, className, color }) => (
     <div className={`h-full ${className}`}>
@@ -21,24 +21,12 @@ const NavButton = ({ label, onClick, className, color }) => (
 function MainMenu({ onNavigate, onOpenThemes }) {
   const [currentVerse, setCurrentVerse] = useState(verses[0]);
   const { theme } = useTheme();
-  const [showMarquee, setShowMarquee] = useState(() => {
-    const saved = localStorage.getItem('show_marquee');
-    return saved !== null ? saved === 'true' : true;
-  });
+
 
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * verses.length);
     setCurrentVerse(verses[randomIndex]);
 
-    const handleSettingsChange = () => {
-        const saved = localStorage.getItem('show_marquee');
-        setShowMarquee(saved !== null ? saved === 'true' : true);
-    };
-
-    window.addEventListener('settings-change', handleSettingsChange);
-    return () => {
-        window.removeEventListener('settings-change', handleSettingsChange);
-    };
   }, []);
 
   return (
@@ -86,7 +74,7 @@ function MainMenu({ onNavigate, onOpenThemes }) {
           </div>
         </div>
       </div>
-      {showMarquee && <DateTimeMarquee />}
+
       <BottomBar onHomeClick={() => {}} onThemesClick={onOpenThemes} showHome={false} showThemes={true} />
       <WhatsAppButton />
     </>

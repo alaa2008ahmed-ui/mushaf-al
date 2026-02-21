@@ -87,14 +87,9 @@ function HisnAlmuslim({ onBack }) {
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center">
-                        {currentDoorId && (
-                            <button onClick={() => setCurrentDoorId(null)} className="absolute right-0 top-1/2 -translate-y-1/2 transform inline-flex items-center gap-2 text-xs font-semibold bg-white/15 hover:bg-white/25 text-white px-3 py-1 rounded-full transition shadow-md">
-                                <i className="fa-solid fa-arrow-right text-base"></i>
-                                <span>العودة</span>
-                            </button>
-                        )}
+
                         <h1 className="app-top-bar__title text-xl sm:text-2xl font-kufi flex items-center gap-2 justify-center">
-                             <i className="fa-solid fa-shield-heart"></i> {door ? door.title : 'حصن المسلم'}
+                             {door ? door.title : 'حصن المسلم'}
                         </h1>
                     </div>
                     <p className="app-top-bar__subtitle">
@@ -110,8 +105,8 @@ function HisnAlmuslim({ onBack }) {
             <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
 
             {zoomedItem && (
-                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4">
-                    <div className="themed-card p-6 rounded-2xl w-full max-w-2xl text-center relative">
+                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4" onClick={closeZoomModal}>
+                    <div className="themed-card p-6 rounded-2xl w-full max-w-2xl text-center relative" onClick={e => e.stopPropagation()}>
                         <p className="text-4xl md:text-5xl leading-relaxed font-amiri">
                             {zoomedItem.text}
                         </p>

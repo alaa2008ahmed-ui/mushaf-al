@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { SAJDAH_LOCATIONS, toArabic } from './constants';
+import { SAJDAH_LOCATIONS, toArabic, SURAH_INFO } from './constants';
 
 interface MushafPageProps {
     pageNum: number;
@@ -52,7 +52,9 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                             {showHeader && ( 
                                 <> 
                                     <div className="surah-header">
+                                        <span className="surah-info-right">{SURAH_INFO[ayah.sNum]?.type}</span>
                                         <span className="surah-name" style={headerStyle}>{ayah.sName.replace('سورة', '').trim()}</span>
+                                        <span className="surah-info-left">آياتها {toArabic(SURAH_INFO[ayah.sNum]?.ayahs || 0)}</span>
                                     </div> 
                                     {ayah.sNum !== 1 && ayah.sNum !== 9 && (
                                         <div className="bismillah" style={headerStyle}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>

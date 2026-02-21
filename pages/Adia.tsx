@@ -50,8 +50,8 @@ function Adia({ onBack }) {
             <BottomBar onHomeClick={onBack} onThemesClick={() => {}} showThemes={false} />
 
             {zoomedDuaa && (
-                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4">
-                    <div className="themed-card p-6 rounded-2xl w-full max-w-2xl text-center relative">
+                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4" onClick={closeZoomModal}>
+                    <div className="themed-card p-6 rounded-2xl w-full max-w-2xl text-center relative" onClick={e => e.stopPropagation()}>
                         <p className="text-4xl md:text-5xl leading-relaxed font-amiri">
                             {zoomedDuaa.text}
                         </p>

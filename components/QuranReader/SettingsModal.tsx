@@ -36,10 +36,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
         const saved = localStorage.getItem('show_sajdah_card');
         return saved !== null ? saved === 'true' : true;
     });
-    const [showMarquee, setShowMarquee] = useState(() => {
-        const saved = localStorage.getItem('show_marquee');
-        return saved !== null ? saved === 'true' : true;
-    });
+
 
 
     const updateSetting = (key: string, value: any) => {
@@ -64,12 +61,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
         showToast(checked ? 'تم تفعيل بطاقة السجدة الكبرى' : 'تم إيقاف بطاقة السجدة الكبرى');
     };
 
-    const handleMarqueeToggle = (checked: boolean) => {
-        setShowMarquee(checked);
-        localStorage.setItem('show_marquee', String(checked));
-        window.dispatchEvent(new Event('settings-change'));
-        showToast(checked ? 'تم تفعيل شريط الأخبار' : 'تم إيقاف شريط الأخبار');
-    };
+
 
 
     const getReaderName = (id: string) => READERS.find(r => r.id === id)?.name || id;
@@ -204,15 +196,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                 </div>
                             </div>
                         </div>
-                        <div className="pt-3">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-bold opacity-80">إظهار شريط الأخبار</label>
-                                <div className="relative inline-block w-10 align-middle select-none">
-                                    <input type="checkbox" id="show-marquee" checked={showMarquee} onChange={(e) => handleMarqueeToggle(e.target.checked)} className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-2 appearance-none cursor-pointer"/>
-                                    <label htmlFor="show-marquee" className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer ${showMarquee ? 'bg-emerald-500' : 'bg-gray-300'}`}></label>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
 
                     <div className="border-b border-gray-200 dark:border-gray-700 py-1">

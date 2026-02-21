@@ -765,6 +765,9 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
     };
 
     const handlePageButtonClick = () => {
+        if (autoScrollState.isActive && !autoScrollState.isPaused) {
+            setAutoScrollState(p => ({ ...p, isPaused: true }));
+        }
         setIsPageInputActive(true);
     };
 
@@ -793,7 +796,7 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
     };
 
     return (
-        <div className={`quran-reader-container ${autoScrollState.isActive && !autoScrollState.isPaused && hideUIOnScroll ? 'fullscreen-active' : ''}`} id="app-container" style={{ backgroundColor: settings.bgColor, color: settings.textColor, fontFamily: settings.fontFamily, position: 'relative', height: '100dvh', overflow: 'hidden' } as React.CSSProperties}>
+        <div className={`quran-reader-container ${autoScrollState.isActive && !autoScrollState.isPaused && hideUIOnScroll && !isPageInputActive ? 'fullscreen-active' : ''}`} id="app-container" style={{ backgroundColor: settings.bgColor, color: settings.textColor, fontFamily: settings.fontFamily, position: 'relative', height: '100dvh', overflow: 'hidden' } as React.CSSProperties}>
             <header id="header" className="header-default flex-none z-50 flex items-center px-4 justify-between border-b shadow-xl w-full gap-2" style={getToolbarStyle('top-toolbar', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>
                 <button id="surah-name-header" onClick={() => openModal('surah-modal')} className="top-bar-text-button" style={getToolbarStyle('surah', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}><span>{surahName} - آية {toArabic(currentAyah.a)}</span></button>
                 <button id="juz-number-header" onClick={() => openModal('juz-modal')} className="top-bar-text-button" style={getToolbarStyle('juz', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>الجزء {toArabic(juz)}</button>
