@@ -202,6 +202,8 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
     const [isTransparentMode, setIsTransparentMode] = useState(() => localStorage.getItem('transparent_mode') === 'true');
 
     const mushafContentRef = useRef<HTMLDivElement>(null);
+    const settingsRef = useRef(settings);
+    useEffect(() => { settingsRef.current = settings; }, [settings]);
     const floatingMenuRef = useRef<HTMLDivElement>(null);
     const menuButtonRef = useRef<HTMLButtonElement>(null);
     const scrollIntervalRef = useRef<number | null>(null);
@@ -607,6 +609,60 @@ const QuranReader: FC<{ onBack: () => void }> = ({ onBack }) => {
             contentEl.removeEventListener('scroll', handleScroll);
         };
     }, [visiblePages, autoScrollState.isActive, handleSajdahVisible]);
+
+    // Pinch to zoom
+    useEffect(() => {
+        const contentEl = mushafContentRef.current;
+        if (!contentEl) return;
+
+        let initialDistance: number | null = null;
+        let initialFontSize: number | null = null;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            if (e.touches.length === 2) {
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                initialDistance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+                initialFontSize = settingsRef.current.fontSize;
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 2 && initialDistance !== null && initialFontSize !== null) {
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const currentDistance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+                
+                const scale = currentDistance / initialDistance;
+                let newFontSize = initialFontSize * scale;
+                
+                newFontSize = Math.max(1.0, Math.min(newFontSize, 5.0));
+                
+                setSettings(prev => ({ ...prev, fontSize: newFontSize }));
+            }
+        };
+
+        const handleTouchEnd = (e: TouchEvent) => {
+             if (e.touches.length < 2 && initialDistance !== null) {
+                 localStorage.setItem('quran_settings', JSON.stringify(settingsRef.current));
+                 initialDistance = null;
+                 initialFontSize = null;
+             }
+        };
+
+        contentEl.addEventListener('touchstart', handleTouchStart, { passive: false });
+        contentEl.addEventListener('touchmove', handleTouchMove, { passive: false });
+        contentEl.addEventListener('touchend', handleTouchEnd);
+        contentEl.addEventListener('touchcancel', handleTouchEnd);
+
+        return () => {
+            contentEl.removeEventListener('touchstart', handleTouchStart);
+            contentEl.removeEventListener('touchmove', handleTouchMove);
+            contentEl.removeEventListener('touchend', handleTouchEnd);
+            contentEl.removeEventListener('touchcancel', handleTouchEnd);
+        };
+    }, []);
 
     const getPageData = useCallback((pageNum) => quranData ? quranData.surahs.flatMap((s:any) => s.ayahs.filter((a:any) => a.page === pageNum).map((a:any) => ({ ...a, sNum: s.number, sName: s.name }))) : [], [quranData]);
     
