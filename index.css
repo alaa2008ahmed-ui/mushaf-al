@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-blue: #1e40af;
+  --secondary-blue: #3b82f6;
+  --light-blue: #dbeafe;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900;
+  font-variant-numeric: lining-nums tabular-nums;
+  -webkit-font-feature-settings: "lnum" 1, "tnum" 1;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-200 rounded-full hover:bg-gray-300;
+}
+
+.no-print {
+  @media print {
+    display: none !important;
+  }
+}
+
+.print-only {
+  display: none !important;
+}
+
+@media print {
+  .print-only {
+    display: block !important;
+  }
+}
+
+.force-show {
+  display: block !important;
+}
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
+  body {
+    background-color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Force tables to show full width and content */
+  .overflow-x-auto {
+    overflow: visible !important;
+    display: block !important;
+    width: auto !important;
+  }
+
+  table {
+    width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  td, th {
+    word-break: break-all;
+  }
+}

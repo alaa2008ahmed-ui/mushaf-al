@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // -------------------------------------------------------------------------
+    // HELPERS
+    // -------------------------------------------------------------------------
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // -------------------------------------------------------------------------
+    // GLOBAL DENY
+    // -------------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // COLLECTIONS
+    // -------------------------------------------------------------------------
+
+    // Drivers
+    match /drivers/{driverId} {
+      function isValidDriver(data) {
+        return data.keys().hasAll(['id', 'driverId', 'driverName']) 
+          && data.keys().size() >= 3
+          && data.id is string && data.id.size() <= 100
+          && data.driverId is number
+          && data.driverName is string && data.driverName.size() <= 100;
+      }
+      allow read: if true;
+      allow create: if isSignedIn() && isValidDriver(incoming()) && isValidId(driverId);
+      allow update: if isSignedIn() && isValidDriver(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    // Vehicles
+    match /vehicles/{vehicleId} {
+      function isValidVehicle(data) {
+        return data.keys().hasAll(['id', 'vehicleId', 'vehicleNumber'])
+          && data.keys().size() >= 3
+          && data.id is string && data.id.size() <= 100
+          && data.vehicleId is number
+          && data.vehicleNumber is string && data.vehicleNumber.size() <= 100;
+      }
+      allow read: if true;
+      allow create: if isSignedIn() && isValidVehicle(incoming()) && isValidId(vehicleId);
+      allow update: if isSignedIn() && isValidVehicle(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    // Driver Work Logs
+    match /driver_work_logs/{logId} {
+      function isValidWorkLog(data) {
+        return data.keys().hasAll(['id', 'logId', 'driverId', 'driverName', 'vehicleId', 'vehicleNumber', 'startTime', 'endTime', 'workDurationHours', 'date'])
+          && data.id is string && data.logId is string
+          && data.driverId is number && data.vehicleId is number
+          && data.workDurationHours is number;
+      }
+      allow read: if true;
+      allow create: if isSignedIn() && isValidWorkLog(incoming()) && isValidId(logId);
+      allow update: if isSignedIn() && isValidWorkLog(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    // Driver Monthly Summaries
+    match /driver_monthly_summary/{summaryId} {
+      function isValidSummary(data) {
+        return data.keys().hasAll(['id', 'driverId', 'driverName', 'date', 'totalHours', 'deductedHours', 'extraHours'])
+          && data.driverId is number && data.totalHours is number;
+      }
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidSummary(incoming()) && isValidId(summaryId);
+      allow delete: if isSignedIn();
+    }
+
+    // Existing Collections (Keeping them open for now as they were, but better to harden them too)
+    match /customers/{customerId} { allow read, write: if true; }
+    match /salesInvoices/{invoiceId} { allow read, write: if true; }
+    match /deliveryNotes/{noteId} { allow read, write: if true; }
+    match /bottleTransactions/{transactionId} { allow read, write: if true; }
+    match /records/{recordId} { allow read, write: if true; }
+    match /poCustomers/{poCustomerId} { allow read, write: if true; }
+    
+  }
+}

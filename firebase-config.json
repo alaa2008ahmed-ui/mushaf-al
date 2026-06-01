@@ -1,0 +1,10 @@
+{
+  "projectId": "dialy-sales",
+  "appId": "1:900314310640:web:57a8e2946ce128f0231f35",
+  "apiKey": "AIzaSyBXp4xCa0bpa8ruNmT6DKZDW2qt0KeIMDg",
+  "authDomain": "dialy-sales.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "dialy-sales.firebasestorage.app",
+  "messagingSenderId": "900314310640",
+  "measurementId": "G-2V01WEF29B"
+}
